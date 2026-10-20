@@ -88,6 +88,7 @@ import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
 import com.stripe.android.paymentsheet.rememberPaymentSheet
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -313,7 +314,7 @@ fun PaymentScreen(
                                         Log.e("PaymentScreen", "Stripe Error: ${errorMsg ?: "Failed to generate client secret"}")
                                         Toast.makeText(
                                             context,
-                                            "Failed to initialize payment. Please try again later.",
+                                            errorMsg ?: "Failed to initialize payment. Please try again later.",
                                             Toast.LENGTH_LONG
                                         ).show()
                                     }
@@ -1332,35 +1333,37 @@ private fun parseDestinationInfo(destination: String): Pair<String, String> {
 
 private suspend fun createStripePaymentIntent(
     amountInCurrency: Double,
-    secretKey: String,
+    secretKey: String = "",
     currency: String = "idr",
     paymentMethodType: String? = null
 ): Pair<String?, String?> = withContext(Dispatchers.IO) {
     try {
-        if (secretKey.isBlank() || !secretKey.startsWith("sk_")) {
-            return@withContext Pair(null, "Secret key is invalid or blank")
-        }
-
-        val url = URL("https://api.stripe.com/v1/payment_intents")
-        val conn = url.openConnection() as HttpURLConnection
+        // 1. Ask backend server (Render) to create PaymentIntent securely using process.env.STRIPE_SECRET_KEY
+        val serverUrl = URL("https://pt-zuhanto-travel-app-project.onrender.com/api/create-payment-intent")
+        val conn = serverUrl.openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
-        conn.setRequestProperty("Authorization", "Bearer $secretKey")
-        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-        conn.connectTimeout = 10000
-        conn.readTimeout = 10000
+        conn.setRequestProperty("Content-Type", "application/json")
+        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            try {
+                val token = user.getIdToken(false).await().token
+                if (!token.isNullOrEmpty()) {
+                    conn.setRequestProperty("Authorization", "Bearer $token")
+                }
+            } catch (_: Exception) {}
+        }
+        conn.connectTimeout = 12000
+        conn.readTimeout = 12000
         conn.doOutput = true
 
-        val amountInt = (amountInCurrency * 100).toLong().coerceAtLeast(100L)
-
-        // Specify explicit payment method type if provided, otherwise use automatic
-        val postData = if (!paymentMethodType.isNullOrEmpty()) {
-            "amount=$amountInt&currency=$currency&payment_method_types[]=$paymentMethodType"
-        } else {
-            "amount=$amountInt&currency=$currency&automatic_payment_methods[enabled]=true"
+        val jsonBody = JSONObject().apply {
+            put("amount", amountInCurrency)
+            put("currency", currency)
+            if (secretKey.isNotBlank()) put("secretKey", secretKey)
         }
 
         conn.outputStream.use { os ->
-            os.write(postData.toByteArray(Charsets.UTF_8))
+            os.write(jsonBody.toString().toByteArray(Charsets.UTF_8))
         }
 
         val responseCode = conn.responseCode
@@ -1369,12 +1372,53 @@ private suspend fun createStripePaymentIntent(
 
         if (responseCode in 200..299) {
             val jsonObject = JSONObject(responseText)
-            val clientSecret = jsonObject.optString("client_secret", "")
-            if (clientSecret.isNotBlank()) Pair(clientSecret, null) else Pair(null, "Missing client_secret")
+            val clientSecret = jsonObject.optString("clientSecret", "")
+            if (clientSecret.isNotBlank()) {
+                return@withContext Pair(clientSecret, null)
+            }
         } else {
-            Log.e("PaymentScreen", "Stripe API Error ($responseCode): $responseText")
-            Pair(null, "Stripe Error ($responseCode): $responseText")
+            Log.e("PaymentScreen", "Server Stripe Error ($responseCode): $responseText")
         }
+
+        // 2. Direct Stripe API fallback if secretKey was explicitly passed
+        if (secretKey.isNotBlank() && secretKey.startsWith("sk_")) {
+            val stripeUrl = URL("https://api.stripe.com/v1/payment_intents")
+            val stripeConn = stripeUrl.openConnection() as HttpURLConnection
+            stripeConn.requestMethod = "POST"
+            stripeConn.setRequestProperty("Authorization", "Bearer $secretKey")
+            stripeConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            stripeConn.connectTimeout = 10000
+            stripeConn.readTimeout = 10000
+            stripeConn.doOutput = true
+
+            val amountInt = (amountInCurrency * 100).toLong().coerceAtLeast(100L)
+            val postData = if (!paymentMethodType.isNullOrEmpty()) {
+                "amount=$amountInt&currency=$currency&payment_method_types[]=$paymentMethodType"
+            } else {
+                "amount=$amountInt&currency=$currency&automatic_payment_methods[enabled]=true"
+            }
+
+            stripeConn.outputStream.use { os ->
+                os.write(postData.toByteArray(Charsets.UTF_8))
+            }
+
+            val directCode = stripeConn.responseCode
+            val directStream = if (directCode in 200..299) stripeConn.inputStream else stripeConn.errorStream
+            val directText = directStream?.bufferedReader()?.use { it.readText() } ?: ""
+
+            if (directCode in 200..299) {
+                val jsonObject = JSONObject(directText)
+                val clientSecret = jsonObject.optString("client_secret", "")
+                if (clientSecret.isNotBlank()) return@withContext Pair(clientSecret, null)
+            }
+            return@withContext Pair(null, "Stripe Direct Error ($directCode): $directText")
+        }
+
+        val errorDetail = if (responseText.isNotBlank()) {
+            try { JSONObject(responseText).optString("error", responseText) } catch (_: Exception) { responseText }
+        } else "Failed to initialize Stripe PaymentIntent ($responseCode)"
+
+        Pair(null, errorDetail)
     } catch (e: Exception) {
         Log.e("PaymentScreen", "Exception creating PaymentIntent", e)
         Pair(null, e.localizedMessage ?: "Network error")

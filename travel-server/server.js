@@ -231,6 +231,43 @@ Return ONLY valid JSON, with no code fences and no text outside the JSON:
     }
 });
 
+// 4. Stripe Payment Intent Endpoint
+app.post('/api/create-payment-intent', optionalVerifyFirebaseToken, async (req, res) => {
+    let { amount, currency, secretKey } = req.body;
+
+    const activeStripeKey = process.env.STRIPE_SECRET_KEY || secretKey;
+
+    if (!activeStripeKey || !activeStripeKey.startsWith('sk_')) {
+        console.error('[Stripe Error] STRIPE_SECRET_KEY environment variable is not configured on server.');
+        return res.status(500).json({ error: 'Stripe secret key is not configured on the backend server.' });
+    }
+
+    amount = parseFloat(amount);
+    if (isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ error: 'Invalid payment amount' });
+    }
+    if (!currency || typeof currency !== 'string') {
+        currency = 'idr';
+    }
+
+    try {
+        const stripe = require('stripe')(activeStripeKey);
+        const amountInSubunits = Math.max(100, Math.round(amount * 100));
+
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amountInSubunits,
+            currency: currency.toLowerCase(),
+            automatic_payment_methods: { enabled: true }
+        });
+
+        console.log(`[Stripe] Created PaymentIntent ${paymentIntent.id} for amount ${amountInSubunits} ${currency}`);
+        return res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error) {
+        console.error('[Stripe API Error]:', error.message);
+        return res.status(500).json({ error: error.message || 'Failed to create PaymentIntent' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 app.listen(PORT, HOST, () => {
