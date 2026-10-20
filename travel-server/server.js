@@ -12,15 +12,19 @@ if (!admin.apps.length) {
         });
     } catch (e) {
         console.warn('[Firebase Admin Warning]:', e.message);
-        admin.initializeApp();
+        try {
+            admin.initializeApp();
+        } catch (e2) {
+            console.warn('[Firebase Admin Init Error]: Running without Firebase Admin credentials:', e2.message);
+        }
     }
 }
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 if (!GEMINI_API_KEY) {
     console.warn("[Warning] GEMINI_API_KEY environment variable is not set! AI requests will fail with 401 Unauthorized.");
 }
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || 'DUMMY_KEY_FOR_STARTUP');
 
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Render)
