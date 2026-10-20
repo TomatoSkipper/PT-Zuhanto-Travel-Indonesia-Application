@@ -206,7 +206,7 @@ fun PaymentScreen(
                 Log.e("PaymentScreen", "Payment failed: ${result.error.localizedMessage}", result.error)
                 Toast.makeText(
                     context,
-                    "$paymentFailedMsg. Please try again.",
+                    "$paymentFailedMsg: ${result.error.localizedMessage ?: "Unknown error"}",
                     Toast.LENGTH_LONG
                 ).show()
             }

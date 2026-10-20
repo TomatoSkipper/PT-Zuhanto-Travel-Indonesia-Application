@@ -256,13 +256,36 @@ app.post('/api/create-payment-intent', optionalVerifyFirebaseToken, async (req, 
         const isZeroDecimal = zeroDecimalCurrencies.includes(targetCurrency);
         const amountInSubunits = isZeroDecimal ? Math.max(10000, Math.round(amount)) : Math.max(100, Math.round(amount * 100));
 
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: amountInSubunits,
-            currency: targetCurrency,
-            automatic_payment_methods: { enabled: true }
-        });
+        let paymentIntent;
+        try {
+            paymentIntent = await stripe.paymentIntents.create({
+                amount: amountInSubunits,
+                currency: targetCurrency,
+                automatic_payment_methods: { enabled: true }
+            });
+        } catch (firstErr) {
+            console.warn(`[Stripe Warning] Failed with currency '${targetCurrency}': ${firstErr.message}. Retrying with MYR / USD fallback...`);
+            try {
+                // Try MYR for Malaysian Stripe accounts (approx 3,500 IDR = 1 MYR)
+                const myrAmountInCents = Math.max(100, Math.round((amount / 3500) * 100));
+                paymentIntent = await stripe.paymentIntents.create({
+                    amount: myrAmountInCents,
+                    currency: 'myr',
+                    automatic_payment_methods: { enabled: true }
+                });
+            } catch (secondErr) {
+                console.warn(`[Stripe Warning] Failed with MYR: ${secondErr.message}. Retrying with USD...`);
+                // Fallback to USD (approx 15,500 IDR = 1 USD)
+                const usdAmountInCents = Math.max(100, Math.round((amount / 15500) * 100));
+                paymentIntent = await stripe.paymentIntents.create({
+                    amount: usdAmountInCents,
+                    currency: 'usd',
+                    automatic_payment_methods: { enabled: true }
+                });
+            }
+        }
 
-        console.log(`[Stripe] Created PaymentIntent ${paymentIntent.id} for amount ${amountInSubunits} ${targetCurrency}`);
+        console.log(`[Stripe] Created PaymentIntent ${paymentIntent.id} for amount ${paymentIntent.amount} ${paymentIntent.currency}`);
         return res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
         console.error('[Stripe API Error]:', error.message);
