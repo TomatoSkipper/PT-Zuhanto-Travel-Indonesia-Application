@@ -239,11 +239,11 @@ Return ONLY valid JSON, with no code fences and no text outside the JSON:
 app.post('/api/create-payment-intent', optionalVerifyFirebaseToken, async (req, res) => {
     let { amount, currency, secretKey } = req.body;
 
-    const activeStripeKey = process.env.STRIPE_SECRET_KEY || secretKey;
+    const activeStripeKey = secretKey || process.env.STRIPE_SECRET_KEY;
 
     if (!activeStripeKey || !activeStripeKey.startsWith('sk_')) {
-        console.error('[Stripe Error] STRIPE_SECRET_KEY environment variable is not configured on server.');
-        return res.status(500).json({ error: 'Stripe secret key is not configured on the backend server.' });
+        console.error('[Stripe Error] Secret key is missing or invalid.');
+        return res.status(500).json({ error: 'Stripe secret key is missing or invalid.' });
     }
 
     amount = parseFloat(amount);
@@ -260,34 +260,11 @@ app.post('/api/create-payment-intent', optionalVerifyFirebaseToken, async (req, 
         const isZeroDecimal = zeroDecimalCurrencies.includes(targetCurrency);
         const amountInSubunits = isZeroDecimal ? Math.max(10000, Math.round(amount)) : Math.max(100, Math.round(amount * 100));
 
-        let paymentIntent;
-        try {
-            paymentIntent = await stripe.paymentIntents.create({
-                amount: amountInSubunits,
-                currency: targetCurrency,
-                automatic_payment_methods: { enabled: true }
-            });
-        } catch (firstErr) {
-            console.warn(`[Stripe Warning] Failed with currency '${targetCurrency}': ${firstErr.message}. Retrying with MYR / USD fallback...`);
-            try {
-                // Try MYR for Malaysian Stripe accounts (approx 3,500 IDR = 1 MYR)
-                const myrAmountInCents = Math.max(100, Math.round((amount / 3500) * 100));
-                paymentIntent = await stripe.paymentIntents.create({
-                    amount: myrAmountInCents,
-                    currency: 'myr',
-                    automatic_payment_methods: { enabled: true }
-                });
-            } catch (secondErr) {
-                console.warn(`[Stripe Warning] Failed with MYR: ${secondErr.message}. Retrying with USD...`);
-                // Fallback to USD (approx 15,500 IDR = 1 USD)
-                const usdAmountInCents = Math.max(100, Math.round((amount / 15500) * 100));
-                paymentIntent = await stripe.paymentIntents.create({
-                    amount: usdAmountInCents,
-                    currency: 'usd',
-                    automatic_payment_methods: { enabled: true }
-                });
-            }
-        }
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amountInSubunits,
+            currency: targetCurrency,
+            automatic_payment_methods: { enabled: true }
+        });
 
         console.log(`[Stripe] Created PaymentIntent ${paymentIntent.id} for amount ${paymentIntent.amount} ${paymentIntent.currency}`);
         return res.json({ clientSecret: paymentIntent.client_secret });
