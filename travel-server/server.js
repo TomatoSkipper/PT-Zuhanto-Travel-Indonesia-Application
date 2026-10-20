@@ -246,21 +246,23 @@ app.post('/api/create-payment-intent', optionalVerifyFirebaseToken, async (req, 
     if (isNaN(amount) || amount <= 0) {
         return res.status(400).json({ error: 'Invalid payment amount' });
     }
-    if (!currency || typeof currency !== 'string') {
-        currency = 'idr';
-    }
+    const targetCurrency = (currency && typeof currency === 'string') ? currency.toLowerCase() : 'idr';
 
     try {
         const stripe = require('stripe')(activeStripeKey);
-        const amountInSubunits = Math.max(100, Math.round(amount * 100));
+
+        // Zero-decimal currencies in Stripe (e.g. IDR, JPY, KRW, VND)
+        const zeroDecimalCurrencies = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf', 'idr'];
+        const isZeroDecimal = zeroDecimalCurrencies.includes(targetCurrency);
+        const amountInSubunits = isZeroDecimal ? Math.max(10000, Math.round(amount)) : Math.max(100, Math.round(amount * 100));
 
         const paymentIntent = await stripe.paymentIntents.create({
             amount: amountInSubunits,
-            currency: currency.toLowerCase(),
+            currency: targetCurrency,
             automatic_payment_methods: { enabled: true }
         });
 
-        console.log(`[Stripe] Created PaymentIntent ${paymentIntent.id} for amount ${amountInSubunits} ${currency}`);
+        console.log(`[Stripe] Created PaymentIntent ${paymentIntent.id} for amount ${amountInSubunits} ${targetCurrency}`);
         return res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
         console.error('[Stripe API Error]:', error.message);

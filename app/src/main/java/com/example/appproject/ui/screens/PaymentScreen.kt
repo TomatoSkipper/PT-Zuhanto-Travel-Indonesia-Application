@@ -1352,8 +1352,8 @@ private suspend fun createStripePaymentIntent(
                 }
             } catch (_: Exception) {}
         }
-        conn.connectTimeout = 12000
-        conn.readTimeout = 12000
+        conn.connectTimeout = 30000
+        conn.readTimeout = 30000
         conn.doOutput = true
 
         val jsonBody = JSONObject().apply {
