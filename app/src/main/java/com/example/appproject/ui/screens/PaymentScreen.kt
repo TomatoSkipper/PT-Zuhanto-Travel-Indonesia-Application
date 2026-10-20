@@ -825,12 +825,6 @@ private fun BookingSummaryCard(booking: Booking) {
                     color = Color(0xFF0F172A),
                     modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = statusDisplay,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF475569)
-                )
             }
 
             // Subtitle: "2 pax · 24 Oct 2026"

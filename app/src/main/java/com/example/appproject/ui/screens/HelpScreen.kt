@@ -323,17 +323,6 @@ fun HelpScreen(
                             label = stringResource(R.string.phone),
                             detail = "+62 813 3315 225"
                         )
-
-                        HorizontalDivider(
-                            color = Color(0xFFF1F5F9),
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
-
-                        ContactInfoRow(
-                            icon = Icons.Outlined.AccessTime,
-                            label = stringResource(R.string.operating_hours),
-                            detail = "Add your hours"
-                        )
                     }
                 }
             }

@@ -1078,8 +1078,7 @@ fun SplashWithCircularLogo(onSplashFinished: () -> Unit) {
 private data class AdminNavItemData(
     val route: String,
     val label: String,
-    val icon: ImageVector,
-    val showChevron: Boolean = true
+    val icon: ImageVector
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1216,32 +1215,27 @@ fun AdminSideNavbar(
                 AdminNavItemData(
                     route = "admin",
                     label = stringResource(R.string.admin_dashboard),
-                    icon = Icons.Filled.Home,
-                    showChevron = false
+                    icon = Icons.Filled.Home
                 ),
                 AdminNavItemData(
                     route = "admin-users",
                     label = stringResource(R.string.user_accounts),
-                    icon = Icons.Default.People,
-                    showChevron = true
+                    icon = Icons.Default.People
                 ),
                 AdminNavItemData(
                     route = "admin-help",
                     label = stringResource(R.string.help_and_support),
-                    icon = Icons.AutoMirrored.Filled.Assignment,
-                    showChevron = true
+                    icon = Icons.AutoMirrored.Filled.Assignment
                 ),
                 AdminNavItemData(
                     route = "admin-vouchers",
                     label = stringResource(R.string.manage_vouchers),
-                    icon = Icons.Default.ConfirmationNumber,
-                    showChevron = true
+                    icon = Icons.Default.ConfirmationNumber
                 ),
                 AdminNavItemData(
                     route = "settings",
                     label = stringResource(R.string.settings),
-                    icon = Icons.Default.Settings,
-                    showChevron = true
+                    icon = Icons.Default.Settings
                 )
             )
 
@@ -1251,7 +1245,6 @@ fun AdminSideNavbar(
                     icon = item.icon,
                     label = item.label,
                     selected = isSelected,
-                    showChevron = item.showChevron,
                     onClick = { onNavigate(item.route) }
                 )
             }
@@ -1307,7 +1300,6 @@ private fun AdminDrawerNavItem(
     icon: ImageVector,
     label: String,
     selected: Boolean,
-    showChevron: Boolean,
     onClick: () -> Unit
 ) {
     val backgroundColor = if (selected) Color(0xFFEFF6FF) else Color.Transparent
@@ -1345,14 +1337,6 @@ private fun AdminDrawerNavItem(
                 ),
                 modifier = Modifier.weight(1f)
             )
-            if (showChevron && !selected) {
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = Color(0xFF94A3B8),
-                    modifier = Modifier.size(18.dp)
-                )
-            }
         }
     }
 }

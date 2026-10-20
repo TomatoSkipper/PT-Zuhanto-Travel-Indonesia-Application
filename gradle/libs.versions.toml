@@ -18,7 +18,7 @@ cameraCore = "1.4.1"
 composeIcons = "1.7.6"
 navigationCompose = "2.8.5"
 room = "2.6.1"
-ksp = "2.1.0-1.0.29"
+ksp = "2.0.21-1.0.28"
 firebase-bom = "33.7.0"
 google-services = "4.5.0"
 
