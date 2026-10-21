@@ -1086,5 +1086,8 @@
     <string name="need_a_hand">Need a hand</string>
     <string name="something_else">Something else</string>
     <string name="thank_you_for_your_review">Thank you for your review</string>
+    <string name="not_verified">Not Verfied</string>
+    <string name="your_account_has_been_created">Your account had been created successfully.</string>
+    <string name="your_account_has_been_banned">Your account has been banned. Please contact our customer service.</string>
 
 </resources>

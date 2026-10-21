@@ -161,11 +161,8 @@ fun AskQuestionScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Spacer(modifier = Modifier.height(2.dp))
-
                     Box(contentAlignment = Alignment.Center) {
                         Surface(
                             modifier = Modifier.size(92.dp),

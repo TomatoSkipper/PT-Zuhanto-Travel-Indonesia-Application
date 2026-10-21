@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Female
@@ -56,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.appproject.R
 import com.example.appproject.data.model.User
+import com.example.appproject.data.model.isValidPhone
 import com.example.appproject.data.repository.FirebaseRepository
 import com.example.appproject.ui.theme.PrimaryBlue
 import kotlinx.coroutines.launch
@@ -75,6 +77,8 @@ fun ProfileScreen(
     var gender by remember { mutableStateOf("Male") }
     var errorMessage by remember { mutableStateOf("") }
     var successMessage by remember { mutableStateOf("") }
+    var showPhoneVerificationDialog by remember { mutableStateOf(false) }
+    var pendingPhoneChange by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -368,28 +372,45 @@ fun ProfileScreen(
                             color = Color(0xFF0F172A)
                         )
 
+                        val isVerified = user?.isPhoneVerified == true && user?.phone == phone
                         Surface(
                             shape = CircleShape,
-                            color = Color(0xFFECFDF5),
-                            border = BorderStroke(1.dp, Color(0xFFA7F3D0))
+                            color = if (isVerified) Color(0xFFECFDF5) else Color(0xFFFEF2F2),
+                            border = BorderStroke(1.dp, if (isVerified) Color(0xFFA7F3D0) else Color(0xFFFECACA))
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = Color(0xFF059669),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Verified",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF059669)
-                                )
+                                if (isVerified) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = Color(0xFF059669),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = stringResource(R.string.phone_verified),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF059669),
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Cancel,
+                                        contentDescription = null,
+                                        tint = Color(0xFFDC2626),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = stringResource(R.string.not_verified),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFDC2626),
+                                    )
+                                }
                             }
                         }
                     }
@@ -473,6 +494,42 @@ fun ProfileScreen(
                 )
             }
 
+            if (showPhoneVerificationDialog) {
+                PhoneVerificationBookingDialog(
+                    initialPhone = pendingPhoneChange,
+                    username = username,
+                    firebaseRepo = firebaseRepo,
+                    onVerificationSuccess = { verifiedPhone ->
+                        scope.launch {
+                            user?.let { currentUser ->
+                                val cleanFullName = fullName.trim()
+                                val parts = cleanFullName.split("\\s+".toRegex()).filter { it.isNotBlank() }
+                                val derivedUsername = when {
+                                    parts.size >= 2 -> "${parts[0]} ${parts[1]}"
+                                    parts.size == 1 -> parts[0]
+                                    else -> "Traveler"
+                                }
+                                val updatedUser = currentUser.copy(
+                                    name = cleanFullName,
+                                    username = derivedUsername,
+                                    email = email.trim(),
+                                    phone = verifiedPhone,
+                                    isPhoneVerified = true,
+                                    gender = gender
+                                )
+                                firebaseRepo.saveUser(updatedUser)
+                                user = updatedUser
+                                phone = verifiedPhone
+                                showPhoneVerificationDialog = false
+                                successMessage = context.getString(R.string.profile_updated)
+                                onProfileUpdated(updatedUser.uid)
+                            }
+                        }
+                    },
+                    onDismiss = { showPhoneVerificationDialog = false }
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // Save changes Button
@@ -494,8 +551,17 @@ fun ProfileScreen(
                                     val newPhone = phone.trim()
                                     val isPhoneChanged = it.phone != newPhone
 
-                                    if (isPhoneChanged && firebaseRepo.isPhoneRegistered(newPhone, it.uid)) {
-                                        errorMessage = "This phone number is already registered to another account"
+                                    if (isPhoneChanged) {
+                                        if (!isValidPhone(newPhone)) {
+                                            errorMessage = context.getString(R.string.error_invalid_phone)
+                                            return@launch
+                                        }
+                                        if (firebaseRepo.isPhoneRegistered(newPhone, it.uid)) {
+                                            errorMessage = "This phone number is already registered to another account"
+                                            return@launch
+                                        }
+                                        pendingPhoneChange = newPhone
+                                        showPhoneVerificationDialog = true
                                         return@launch
                                     }
 
@@ -505,7 +571,7 @@ fun ProfileScreen(
                                         email = email.trim(),
                                         phone = newPhone,
                                         gender = gender,
-                                        isPhoneVerified = if (isPhoneChanged) false else it.isPhoneVerified
+                                        isPhoneVerified = it.isPhoneVerified
                                     )
                                     firebaseRepo.saveUser(updatedUser)
 

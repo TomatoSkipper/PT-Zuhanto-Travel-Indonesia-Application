@@ -251,7 +251,7 @@ fun LoginScreen(
                         val email = firebaseUser?.email ?: account.email ?: ""
                         val displayName = firebaseUser?.displayName ?: account.displayName ?: "Traveler"
                         val phone = firebaseUser?.phoneNumber ?: ""
-                        val username = handleGoogleSignInUser(firebaseRepo, email, displayName, phone)
+                        val (username, _) = handleGoogleSignInUser(firebaseRepo, context, email, displayName, phone)
 
                         val preferences = context.getSharedPreferences(
                             "user_session",
@@ -317,7 +317,7 @@ fun LoginScreen(
                         val email = firebaseUser?.email ?: googleIdTokenCredential.id ?: ""
                         val displayName = firebaseUser?.displayName ?: googleIdTokenCredential.displayName ?: "Traveler"
                         val phone = firebaseUser?.phoneNumber ?: ""
-                        val username = handleGoogleSignInUser(firebaseRepo, email, displayName, phone)
+                        val (username, _) = handleGoogleSignInUser(firebaseRepo, context, email, displayName, phone)
 
                         val preferences = context.getSharedPreferences(
                             "user_session",
@@ -801,6 +801,8 @@ fun RegisterScreen(
     var errorMessage by remember { mutableStateOf("") }
     var showRegistrationSuccess by remember { mutableStateOf(false) }
     var registeredUsername by remember { mutableStateOf("") }
+    var registrationSuccessTitle by remember { mutableStateOf("Registration Successful") }
+    var registrationSuccessMessage by remember { mutableStateOf("Your account has been successfully created.") }
     var isTacSent by remember { mutableStateOf(false) }
     var verificationId by remember { mutableStateOf<String?>(null) }
     var tacCode by remember { mutableStateOf("") }
@@ -832,7 +834,7 @@ fun RegisterScreen(
                         val userEmail = firebaseUser?.email ?: account.email ?: ""
                         val displayName = firebaseUser?.displayName ?: account.displayName ?: "Traveler"
                         val userPhone = firebaseUser?.phoneNumber ?: ""
-                        val username = handleGoogleSignInUser(firebaseRepo, userEmail, displayName, userPhone)
+                        val (username, isExisting) = handleGoogleSignInUser(firebaseRepo, context, userEmail, displayName, userPhone)
 
                         val preferences = context.getSharedPreferences(
                             "user_session",
@@ -840,9 +842,15 @@ fun RegisterScreen(
                         )
                         preferences.edit().putString("signed_in_username", username).apply()
 
-                        registeredUsername = username
                         isloading = false
-                        showRegistrationSuccess = true
+                        if (isExisting) {
+                            onRegisterSuccess(username)
+                        } else {
+                            registeredUsername = username
+                            registrationSuccessTitle = context.getString(R.string.registration_successful)
+                            registrationSuccessMessage = context.getString(R.string.your_account_has_been_created)
+                            showRegistrationSuccess = true
+                        }
                     } catch (e: Exception) {
                         isloading = false
                         errorMessage = e.localizedMessage ?: context.getString(R.string.registration_failed)
@@ -900,7 +908,7 @@ fun RegisterScreen(
                         val userEmail = firebaseUser?.email ?: googleIdTokenCredential.id ?: ""
                         val displayName = firebaseUser?.displayName ?: googleIdTokenCredential.displayName ?: "Traveler"
                         val userPhone = firebaseUser?.phoneNumber ?: ""
-                        val username = handleGoogleSignInUser(firebaseRepo, userEmail, displayName, userPhone)
+                        val (username, isExisting) = handleGoogleSignInUser(firebaseRepo, context, userEmail, displayName, userPhone)
 
                         val preferences = context.getSharedPreferences(
                             "user_session",
@@ -908,9 +916,15 @@ fun RegisterScreen(
                         )
                         preferences.edit().putString("signed_in_username", username).apply()
 
-                        registeredUsername = username
                         isloading = false
-                        showRegistrationSuccess = true
+                        if (isExisting) {
+                            onRegisterSuccess(username)
+                        } else {
+                            registeredUsername = username
+                            registrationSuccessTitle = "Registration Successful"
+                            registrationSuccessMessage = "Your account has been successfully created."
+                            showRegistrationSuccess = true
+                        }
                         return@launch
                     }
                 }
@@ -1034,6 +1048,18 @@ fun RegisterScreen(
 
         scope.launch {
             try {
+                val cleanEmail = email.trim()
+                val existingUser = if (cleanEmail.isNotBlank()) firebaseRepo.getUser(cleanEmail) else null
+                if (existingUser != null) {
+                    isloading = false
+                    val username = existingUser.username
+                    val preferences = context.getSharedPreferences("user_session", Context.MODE_PRIVATE)
+                    preferences.edit().putString("signed_in_username", username).apply()
+
+                    onRegisterSuccess(username)
+                    return@launch
+                }
+
                 val currentUserUid = auth.currentUser?.uid ?: ""
                 if (firebaseRepo.isPhoneRegistered(fullPhone, currentUserUid)) {
                     isloading = false
@@ -1410,9 +1436,9 @@ fun RegisterScreen(
                     showRegistrationSuccess = false
                     onRegisterSuccess(registeredUsername)
                 },
-                title = { Text(stringResource(R.string.registration_successful)) },
+                title = { Text(registrationSuccessTitle) },
                 text = {
-                    Text(stringResource(R.string.account_created_message))
+                    Text(registrationSuccessMessage)
                 },
                 confirmButton = {
                     Button(
@@ -1432,6 +1458,8 @@ fun RegisterScreen(
 @Composable
 fun PhoneVerificationBookingDialog(
     initialPhone: String,
+    username: String,
+    firebaseRepo: FirebaseRepository,
     onVerificationSuccess: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -1446,6 +1474,7 @@ fun PhoneVerificationBookingDialog(
     val context = LocalContext.current
     val activity = context as? Activity
     val auth = remember { FirebaseAuth.getInstance() }
+    val scope = rememberCoroutineScope()
 
     fun getFullPhoneNumber(): String {
         val trimmed = phoneInput.trim()
@@ -1465,29 +1494,48 @@ fun PhoneVerificationBookingDialog(
         errorMessage = ""
         val fullPhone = getFullPhoneNumber()
 
-        val options = PhoneAuthOptions.newBuilder(auth)
-            .setPhoneNumber(fullPhone)
-            .setTimeout(60L, TimeUnit.SECONDS)
-            .setActivity(activity)
-            .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                    isLoading = false
-                    onVerificationSuccess(fullPhone)
-                }
+        scope.launch {
+            val customer = if (username.isNotBlank()) firebaseRepo.getUser(username) else null
+            val currentUserUid = customer?.uid ?: FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            if (firebaseRepo.isPhoneRegistered(fullPhone, currentUserUid)) {
+                isLoading = false
+                errorMessage = "This phone number is already registered to another account"
+                return@launch
+            }
 
-                override fun onVerificationFailed(e: FirebaseException) {
-                    isLoading = false
-                    errorMessage = e.message ?: context.getString(R.string.verification_failed)
-                }
+            val options = PhoneAuthOptions.newBuilder(auth)
+                .setPhoneNumber(fullPhone)
+                .setTimeout(60L, TimeUnit.SECONDS)
+                .setActivity(activity)
+                .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                    override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                        scope.launch {
+                            isLoading = false
+                            val verifiedPhone = fullPhone
+                            val customerCheck = if (username.isNotBlank()) firebaseRepo.getUser(username) else null
+                            val uidCheck = customerCheck?.uid ?: FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                            if (firebaseRepo.isPhoneRegistered(verifiedPhone, uidCheck)) {
+                                errorMessage = "This phone number is already registered to another account"
+                                return@launch
+                            }
+                            onVerificationSuccess(verifiedPhone)
+                        }
+                    }
 
-                override fun onCodeSent(vId: String, token: PhoneAuthProvider.ForceResendingToken) {
-                    isLoading = false
-                    isTacSent = true
-                    verificationId = vId
-                }
-            }).build()
+                    override fun onVerificationFailed(e: FirebaseException) {
+                        isLoading = false
+                        errorMessage = e.message ?: context.getString(R.string.verification_failed)
+                    }
 
-        PhoneAuthProvider.verifyPhoneNumber(options)
+                    override fun onCodeSent(vId: String, token: PhoneAuthProvider.ForceResendingToken) {
+                        isLoading = false
+                        isTacSent = true
+                        verificationId = vId
+                    }
+                }).build()
+
+            PhoneAuthProvider.verifyPhoneNumber(options)
+        }
     }
 
     fun verifyTac() {
@@ -1496,20 +1544,29 @@ fun PhoneVerificationBookingDialog(
             errorMessage = context.getString(R.string.error_tac_message)
             return
         }
-        if (verificationId != null) {
-            isLoading = true
-            val credential = PhoneAuthProvider.getCredential(verificationId!!, tacCode.trim())
-            auth.signInWithCredential(credential)
-                .addOnCompleteListener { task ->
-                    isLoading = false
-                    if (task.isSuccessful) {
-                        onVerificationSuccess(fullPhone)
-                    } else {
-                        errorMessage = task.exception?.message ?: context.getString(R.string.invalid_tac)
+        scope.launch {
+            val customer = if (username.isNotBlank()) firebaseRepo.getUser(username) else null
+            val currentUserUid = customer?.uid ?: FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            if (firebaseRepo.isPhoneRegistered(fullPhone, currentUserUid)) {
+                errorMessage = "This phone number is already registered to another account"
+                return@launch
+            }
+
+            if (verificationId != null) {
+                isLoading = true
+                val credential = PhoneAuthProvider.getCredential(verificationId!!, tacCode.trim())
+                auth.signInWithCredential(credential)
+                    .addOnCompleteListener { task ->
+                        isLoading = false
+                        if (task.isSuccessful) {
+                            onVerificationSuccess(fullPhone)
+                        } else {
+                            errorMessage = task.exception?.message ?: context.getString(R.string.invalid_tac)
+                        }
                     }
-                }
-        } else {
-            errorMessage = context.getString(R.string.invalid_verification_request)
+            } else {
+                errorMessage = context.getString(R.string.invalid_verification_request)
+            }
         }
     }
 
@@ -1599,36 +1656,33 @@ fun PhoneVerificationBookingDialog(
 
 private suspend fun handleGoogleSignInUser(
     firebaseRepo: FirebaseRepository,
+    context: Context,
     email: String,
     displayName: String,
     phone: String = ""
-): String {
+): Pair<String, Boolean> {
     val cleanEmail = email.trim()
     val existingUser = if (cleanEmail.isNotBlank()) firebaseRepo.getUser(cleanEmail) else null
 
     if (existingUser != null && existingUser.isBanned) {
-        throw IllegalStateException("Your account has been banned, please contact our customer service")
+        throw IllegalStateException(context.getString(R.string.your_account_has_been_banned))
     }
 
-    val targetUsername = if (existingUser != null && existingUser.username.isNotBlank()) {
-        existingUser.username
-    } else {
-        val nameToUse = if (displayName.isNotBlank()) displayName else cleanEmail.substringBefore("@")
-        val parts = nameToUse.trim().split("\\s+".toRegex()).filter { it.isNotBlank() }
-        when {
-            parts.size >= 2 -> "${parts[0]} ${parts[1]}"
-            parts.size == 1 -> parts[0]
-            else -> cleanEmail.substringBefore("@").ifBlank { "Traveler" }
-        }
+    if (existingUser != null) {
+        // User already exists with this email! Do NOT overwrite anything or change username.
+        return Pair(existingUser.username, true)
     }
 
-    val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid ?: existingUser?.uid ?: ""
-    val userToSave = existingUser?.copy(
-        uid = if (existingUser.uid.isBlank()) currentUserUid else existingUser.uid,
-        email = if (existingUser.email.isBlank()) cleanEmail else existingUser.email,
-        name = if (existingUser.name.isBlank()) displayName else existingUser.name,
-        phone = if (existingUser.phone.isBlank() && phone.isNotBlank()) phone else existingUser.phone
-    ) ?: User(
+    val nameToUse = if (displayName.isNotBlank()) displayName else cleanEmail.substringBefore("@")
+    val parts = nameToUse.trim().split("\\s+".toRegex()).filter { it.isNotBlank() }
+    val targetUsername = when {
+        parts.size >= 2 -> "${parts[0]} ${parts[1]}"
+        parts.size == 1 -> parts[0]
+        else -> cleanEmail.substringBefore("@").ifBlank { "Traveler" }
+    }
+
+    val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    val newUser = User(
         uid = currentUserUid,
         username = targetUsername,
         email = cleanEmail,
@@ -1636,6 +1690,6 @@ private suspend fun handleGoogleSignInUser(
         name = displayName
     )
 
-    firebaseRepo.saveUser(userToSave)
-    return targetUsername
+    firebaseRepo.saveUser(newUser)
+    return Pair(targetUsername, false)
 }

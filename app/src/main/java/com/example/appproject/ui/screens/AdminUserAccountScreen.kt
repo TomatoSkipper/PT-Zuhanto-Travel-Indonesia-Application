@@ -1243,7 +1243,7 @@ fun UserAccountCard(
 
                     Column {
                         Text(
-                            text = nameString.uppercase(),
+                            text = nameString,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0F172A),

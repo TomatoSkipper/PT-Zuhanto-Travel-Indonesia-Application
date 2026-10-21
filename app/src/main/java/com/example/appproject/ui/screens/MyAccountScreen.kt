@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -107,14 +108,10 @@ fun MyAccountScreen(
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
-
             // Screen Title
-            Text(
-                text = stringResource(R.string.my_account_full),
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+            SectionHeader(
+                title = stringResource(R.string.my_account_full),
+                modifier = Modifier.offset(x=(-10).dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -290,7 +287,9 @@ fun MyAccountScreen(
                     onClick = onLogout,
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.error),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFEF4444)
+                    ),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
                 ) {
                     Icon(
@@ -302,7 +301,7 @@ fun MyAccountScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.logout),
-                        color = Color.White,
+                        color = Color(0xFFFFFFFF),
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )

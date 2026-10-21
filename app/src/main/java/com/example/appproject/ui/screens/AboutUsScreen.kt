@@ -51,6 +51,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -545,7 +546,7 @@ fun MissionVisionCard(title: String, description: String, modifier: Modifier = M
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector = if (title.contains("Mission")) Icons.Default.TrackChanges else Icons.Default.Visibility,
+                imageVector = if (title.contains(stringResource(R.string.our_mission))) Icons.Default.TrackChanges else Icons.Default.RocketLaunch,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)

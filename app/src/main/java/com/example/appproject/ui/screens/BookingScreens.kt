@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -309,11 +310,9 @@ fun MyBookingsScreen(
                 .fillMaxWidth()
                 .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 8.dp)
         ) {
-            Text(
-                text = stringResource(R.string.my_bookings),
-                fontSize = 30.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF0F172A)
+            SectionHeader(
+                title = stringResource(R.string.my_bookings),
+                modifier = Modifier.offset(x = (-10).dp)
             )
         }
 

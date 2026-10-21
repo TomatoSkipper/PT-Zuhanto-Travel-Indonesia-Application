@@ -188,6 +188,8 @@ fun BookingDialog(
     if (showPhoneVerificationDialog) {
         PhoneVerificationBookingDialog(
             initialPhone = currentUserPhone,
+            username = username,
+            firebaseRepo = firebaseRepo,
             onVerificationSuccess = { verifiedPhone ->
                 scope.launch {
                     val customer = firebaseRepo.getUser(username)

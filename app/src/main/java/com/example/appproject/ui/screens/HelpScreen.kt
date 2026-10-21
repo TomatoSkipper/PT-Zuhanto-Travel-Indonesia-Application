@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -135,15 +136,13 @@ fun HelpScreen(
                 .padding(innerPadding)
                 .background(Color(0xFFF8FAFC))
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Screen Title
-            Text(
-                text = stringResource(R.string.help_and_support),
-                fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF0F172A)
+            SectionHeader(
+                title = stringResource(R.string.help_and_support),
+                modifier = Modifier.offset(x = (-10).dp)
             )
 
             // Banner Card ("Need a hand?")

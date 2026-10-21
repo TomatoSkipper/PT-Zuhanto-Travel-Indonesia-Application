@@ -1091,5 +1091,8 @@
     <string name="need_a_hand">Perlukan sebarang bantuan</string>
     <string name="something_else">Lain-lain</string>
     <string name="thank_you_for_your_review">Terima kasih atas ulasan anda</string>
+    <string name="not_verified">Tidak Disahkan</string>
+    <string name="your_account_has_been_created">Akaun anda telah berjaya dibuat.</string>
+    <string name="your_account_has_been_banned">Akaun anda telah disekat. Sila hubungi khidmat pelanggan kami.</string>
 
 </resources>
