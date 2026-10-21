@@ -145,7 +145,7 @@ fun BookingSuccessContent(
                     .padding(start = 24.dp, end = 24.dp, top = 36.dp, bottom = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Glowing Checkmark Badge with Radiating Burst Dashes
+                // Glowing Checkmark Badge
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -207,92 +207,6 @@ fun BookingSuccessContent(
                     lineHeight = 20.sp
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Info Box Container (WhatsApp & Email Options)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFFF0F6FF))
-                        .border(1.dp, Color(0xFFE2EAF4), RoundedCornerShape(16.dp))
-                        .padding(vertical = 14.dp, horizontal = 12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        // WhatsApp Info Item
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .background(Color(0xFF25D366), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = WhatsAppIconVector,
-                                    contentDescription = "WhatsApp",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.whatsapp),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F2B48)
-                                )
-                            }
-                        }
-
-                        // Vertical Divider Line
-                        Box(
-                            modifier = Modifier
-                                .height(36.dp)
-                                .width(1.dp)
-                                .background(Color(0xFFD0DCEB))
-                        )
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        // Email Info Item
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .background(Color(0xFF007AFF), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = "Email",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.email),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F2B48)
-                                )
-                            }
-                        }
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(28.dp))
 
                 // Action Button: "Back to Home ->"
@@ -327,68 +241,6 @@ fun BookingSuccessContent(
             }
         }
     }
-}
-
-/**
- * ImageVector representation of WhatsApp icon.
- */
-val WhatsAppIconVector: ImageVector by lazy {
-    ImageVector.Builder(
-        name = "WhatsApp",
-        defaultWidth = 24.dp,
-        defaultHeight = 24.dp,
-        viewportWidth = 24f,
-        viewportHeight = 24f
-    ).apply {
-        path(
-            fill = SolidColor(Color.White)
-        ) {
-            moveTo(12.04f, 2f)
-            curveTo(6.58f, 2f, 2.13f, 6.45f, 2.13f, 11.91f)
-            curveTo(2.13f, 14.01f, 2.78f, 15.96f, 3.89f, 17.58f)
-            lineTo(2.5f, 21.5f)
-            lineTo(6.57f, 20.17f)
-            curveTo(8.13f, 21.07f, 9.93f, 21.58f, 12.04f, 21.58f)
-            curveTo(17.5f, 21.58f, 21.95f, 17.13f, 21.95f, 11.91f)
-            curveTo(21.95f, 6.45f, 17.5f, 2f, 12.04f, 2f)
-            close()
-            moveTo(12.04f, 18.48f)
-            curveTo(10.24f, 18.48f, 8.56f, 17.96f, 7.14f, 17.06f)
-            lineTo(6.79f, 16.84f)
-            lineTo(4.37f, 17.63f)
-            lineTo(5.17f, 15.27f)
-            lineTo(4.93f, 14.89f)
-            curveTo(3.99f, 14.02f, 3.93f, 12.98f, 3.93f, 11.9f)
-            curveTo(3.93f, 7.43f, 7.56f, 3.8f, 12.04f, 3.8f)
-            curveTo(16.51f, 3.8f, 20.14f, 7.43f, 20.14f, 11.9f)
-            curveTo(20.14f, 16.38f, 16.51f, 18.48f, 12.04f, 18.48f)
-            close()
-            moveTo(16.49f, 12.4f)
-            curveTo(16.25f, 12.28f, 15.04f, 11.68f, 14.81f, 11.6f)
-            curveTo(14.59f, 11.52f, 14.42f, 11.48f, 14.26f, 11.72f)
-            curveTo(14.1f, 11.96f, 13.63f, 12.52f, 13.48f, 12.68f)
-            curveTo(13.34f, 12.84f, 13.19f, 12.86f, 12.95f, 12.74f)
-            curveTo(12.71f, 12.62f, 11.93f, 12.36f, 11f, 11.53f)
-            curveTo(10.28f, 10.89f, 9.79f, 10.09f, 9.65f, 9.85f)
-            curveTo(9.51f, 9.61f, 9.64f, 9.48f, 9.76f, 9.36f)
-            curveTo(9.87f, 9.25f, 10f, 9.07f, 10.13f, 8.93f)
-            curveTo(10.25f, 8.79f, 10.29f, 8.69f, 10.37f, 8.53f)
-            curveTo(10.45f, 8.37f, 10.41f, 8.22f, 10.35f, 8.1f)
-            curveTo(10.29f, 7.98f, 9.8f, 6.77f, 9.59f, 6.28f)
-            curveTo(9.39f, 5.8f, 9.19f, 5.87f, 9.04f, 5.86f)
-            lineTo(8.57f, 5.86f)
-            curveTo(8.41f, 5.86f, 8.14f, 5.92f, 7.92f, 6.16f)
-            curveTo(7.7f, 6.4f, 7.06f, 7f, 7.06f, 8.21f)
-            curveTo(7.06f, 9.42f, 7.94f, 10.59f, 8.07f, 10.76f)
-            curveTo(8.19f, 10.92f, 9.8f, 13.4f, 12.26f, 14.46f)
-            curveTo(12.85f, 14.71f, 13.3f, 14.87f, 13.66f, 14.98f)
-            curveTo(14.25f, 15.17f, 14.79f, 15.14f, 15.22f, 15.08f)
-            curveTo(15.7f, 15.01f, 16.67f, 14.49f, 16.87f, 13.92f)
-            curveTo(17.07f, 13.35f, 17.07f, 12.86f, 17.01f, 12.76f)
-            curveTo(16.95f, 12.66f, 16.73f, 12.52f, 16.49f, 12.4f)
-            close()
-        }
-    }.build()
 }
 
 @Preview(showBackground = true)
