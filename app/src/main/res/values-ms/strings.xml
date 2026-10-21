@@ -1084,15 +1084,23 @@
     <string name="dialog_unban_account_btn">Nyahsekat Akaun</string>
     <string name="dialog_cancel_btn">Batal</string>
     <string name="payment_time_expired">Tempoh pembayaran tamat</string>
-    <string name="prefer_to_talk_to_someone">Lebih suka bercakap dengan seseorang?</string>
+    <string name="contact_us_directly">Hubungi Kami Terus</string>
     <string name="operating_hours">Waktu Operasi</string>
     <string name="cancelling">Pembatalan</string>
     <string name="send_us_a_question_and_our_team_will_reply_within_24_hours">Hantarkan soalan kepada kami dan pasukan kami akan membalas dalam masa 24 jam.</string>
-    <string name="need_a_hand">Perlukan sebarang bantuan</string>
+    <string name="need_a_hand">Perlukan sebarang bantuan?</string>
     <string name="something_else">Lain-lain</string>
     <string name="thank_you_for_your_review">Terima kasih atas ulasan anda</string>
     <string name="not_verified">Tidak Disahkan</string>
     <string name="your_account_has_been_created">Akaun anda telah berjaya dibuat.</string>
     <string name="your_account_has_been_banned">Akaun anda telah disekat. Sila hubungi khidmat pelanggan kami.</string>
+
+    <!-- Booking Successful Dialog -->
+    <string name="booking_successful">Tempahan Berjaya!</string>
+    <string name="booking_success_contact_desc">Pasukan kami akan menghubungi anda dalam masa 24 jam\nuntuk pengesahan melalui WhatsApp atau E-mel.</string>
+    <string name="whatsapp">WhatsApp</string>
+    <string name="whatsapp_subtext">Pantas &amp; Mudah</string>
+    <string name="email_subtext">Maklumat Terperinci</string>
+    <string name="back_to_home">Kembali ke Laman Utama</string>
 
 </resources>

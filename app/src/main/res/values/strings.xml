@@ -1079,15 +1079,23 @@
     <string name="dialog_unban_account_btn">Buka Blokir Akun</string>
     <string name="dialog_cancel_btn">Batal</string>
     <string name="payment_time_expired">Payment time expired</string>
-    <string name="prefer_to_talk_to_someone">Prefer to talk to someone?</string>
+    <string name="contact_us_directly">Contact Us Directly</string>
     <string name="operating_hours">Operating Hours</string>
     <string name="cancelling">Cancelling</string>
     <string name="send_us_a_question_and_our_team_will_reply_within_24_hours">Send us a question and our team will reply within 24 hours.</string>
-    <string name="need_a_hand">Need a hand</string>
+    <string name="need_a_hand">Need Some Help?</string>
     <string name="something_else">Something else</string>
     <string name="thank_you_for_your_review">Thank you for your review</string>
     <string name="not_verified">Not Verfied</string>
     <string name="your_account_has_been_created">Your account had been created successfully.</string>
     <string name="your_account_has_been_banned">Your account has been banned. Please contact our customer service.</string>
+
+    <!-- Booking Successful Dialog -->
+    <string name="booking_successful">Booking Successful!</string>
+    <string name="booking_success_contact_desc">Our team will contact you within 24 hours\nfor confirmation via WhatsApp or Email.</string>
+    <string name="whatsapp">WhatsApp</string>
+    <string name="whatsapp_subtext">Quick &amp; Convenient</string>
+    <string name="email_subtext">Detailed Information</string>
+    <string name="back_to_home">Back to Home</string>
 
 </resources>

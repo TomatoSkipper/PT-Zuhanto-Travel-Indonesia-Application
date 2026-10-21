@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -290,7 +289,7 @@ fun HelpScreen(
             // Prefer to talk to someone? Section
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = stringResource(R.string.prefer_to_talk_to_someone),
+                    text = stringResource(R.string.contact_us_directly),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A)

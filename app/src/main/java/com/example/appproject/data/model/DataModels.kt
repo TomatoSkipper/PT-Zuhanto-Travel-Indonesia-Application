@@ -164,6 +164,7 @@ data class Booking(
     val customerUsername: String = "",
     val customerName: String = "",
     val customerPhone: String = "",
+    val customerEmail: String = "",
     val destination: String = "",
     val bookingDate: String = "",
     val status: String = "",

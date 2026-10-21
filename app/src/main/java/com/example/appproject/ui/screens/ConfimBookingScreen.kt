@@ -46,6 +46,7 @@ import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.example.appproject.ui.components.BookingSuccessDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -119,6 +120,7 @@ fun BookingDialog(
     var noteText by remember { mutableStateOf("") }
 
     var showPhoneVerificationDialog by remember { mutableStateOf(false) }
+    var showBookingSuccessDialog by remember { mutableStateOf(false) }
     var currentUserPhone by remember { mutableStateOf("") }
 
     val effectivePaxCount = if (isCustomPaxTrip) customPaxCount else selectedTier.paxCount
@@ -157,6 +159,7 @@ fun BookingDialog(
             } else {
                 "${trip.name} ($paxLabelText)"
             }
+            val customerEmail = customer?.email?.ifBlank { null } ?: FirebaseAuth.getInstance().currentUser?.email ?: ""
             firebaseRepo.saveBooking(
                 Booking(
                     bookingId = System.currentTimeMillis().toString(),
@@ -164,6 +167,7 @@ fun BookingDialog(
                     customerUsername = username,
                     customerName = customer?.username ?: username,
                     customerPhone = customerPhone,
+                    customerEmail = customerEmail,
                     destination = destinationWithNote,
                     bookingDate = bookingDate,
                     status = "Pending",
@@ -180,9 +184,21 @@ fun BookingDialog(
                     voucherUsed = if (appliedDiscount > 0) voucherCode.trim().uppercase() else ""
                 )
             )
-            Toast.makeText(context, context.getString(R.string.booking_confirmed_success), Toast.LENGTH_SHORT).show()
-            onDismiss()
+            showBookingSuccessDialog = true
         }
+    }
+
+    if (showBookingSuccessDialog) {
+        BookingSuccessDialog(
+            onDismiss = {
+                showBookingSuccessDialog = false
+                onDismiss()
+            },
+            onBackToHome = {
+                showBookingSuccessDialog = false
+                onDismiss()
+            }
+        )
     }
 
     if (showPhoneVerificationDialog) {
@@ -206,10 +222,11 @@ fun BookingDialog(
         )
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
+    if (!showBookingSuccessDialog) {
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -829,5 +846,6 @@ fun BookingDialog(
             }
         }
     }
+}
 }
 }

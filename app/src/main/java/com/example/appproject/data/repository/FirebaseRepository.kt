@@ -184,17 +184,27 @@ class FirebaseRepository {
         val twoDaysMs = 2L * 24 * 60 * 60 * 1000L
         val updatedList = mutableListOf<Booking>()
         for (booking in bookings) {
-            val normStatus = normalizeBookingStatus(booking.status)
-            val normPayment = normalizePaymentStatus(booking.paymentStatus)
-            if (normStatus == "Confirmed" && normPayment != "Paid" && booking.confirmationTimestamp > 0L) {
-                if (currentTime - booking.confirmationTimestamp > twoDaysMs) {
-                    val cancelledBooking = booking.copy(status = "Cancelled")
+            var currentBooking = booking
+            if (currentBooking.customerEmail.isBlank()) {
+                val userKey = currentBooking.customerUid.ifBlank { currentBooking.customerUsername }
+                if (userKey.isNotBlank()) {
+                    val user = getUser(userKey)
+                    if (user != null && user.email.isNotBlank()) {
+                        currentBooking = currentBooking.copy(customerEmail = user.email)
+                    }
+                }
+            }
+            val normStatus = normalizeBookingStatus(currentBooking.status)
+            val normPayment = normalizePaymentStatus(currentBooking.paymentStatus)
+            if (normStatus == "Confirmed" && normPayment != "Paid" && currentBooking.confirmationTimestamp > 0L) {
+                if (currentTime - currentBooking.confirmationTimestamp > twoDaysMs) {
+                    val cancelledBooking = currentBooking.copy(status = "Cancelled")
                     updateBooking(cancelledBooking)
                     updatedList.add(cancelledBooking)
                     continue
                 }
             }
-            updatedList.add(booking)
+            updatedList.add(currentBooking)
         }
         return updatedList
     }
