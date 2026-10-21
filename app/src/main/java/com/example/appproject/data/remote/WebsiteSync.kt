@@ -964,17 +964,74 @@ fun getDefaultWebsitePromoTrips(context: Context? = null): List<TripPromo> {
     )
 }
 
+fun extractPriceFromJsObject(jsContent: String, keyword: String): String? {
+    val lowerJs = jsContent.lowercase(Locale.ROOT)
+    val lowerKeyword = keyword.lowercase(Locale.ROOT)
+    var idx = lowerJs.indexOf(lowerKeyword)
+    while (idx != -1) {
+        val start = idx
+        val end = (idx + 250).coerceAtMost(jsContent.length)
+        val snippet = jsContent.substring(start, end)
+
+        val priceMatcher = Pattern.compile("""(?:IDR|Rp)?\s*([\d.,]{4,})""", Pattern.CASE_INSENSITIVE).matcher(snippet)
+        while (priceMatcher.find()) {
+            val candidate = priceMatcher.group(1)?.trim() ?: ""
+            val cleanDigits = candidate.filter { it.isDigit() }
+            val num = cleanDigits.toIntOrNull() ?: 0
+            if (num in 500000..20000000) {
+                return if (candidate.contains("IDR", ignoreCase = true) || candidate.contains("Rp", ignoreCase = true)) {
+                    candidate
+                } else {
+                    "IDR " + String.format(Locale.US, "%,d", num)
+                }
+            }
+        }
+        idx = lowerJs.indexOf(lowerKeyword, idx + 1)
+    }
+    return null
+}
+
 fun getScopedJsTextForPackage(jsContent: String, pkgPath: String): String {
-    val routePattern = Pattern.compile("""path:"${Pattern.quote(pkgPath)}",element:o\.jsx\((\w+),""")
+    val routePattern = Pattern.compile("""path:["'`]?${Pattern.quote(pkgPath)}["'`]?[^}]*?element:(?:\(0,)?(?:\w+\.)?jsx\)\(([a-zA-Z0-9_$]+)""")
     val routeMatcher = routePattern.matcher(jsContent)
-    val compName = if (routeMatcher.find()) routeMatcher.group(1) else null
+    var compName = if (routeMatcher.find()) routeMatcher.group(1) else null
+
+    if (compName == null) {
+        val idxPath = jsContent.indexOf(pkgPath)
+        if (idxPath != -1) {
+            val chunk = jsContent.substring(idxPath, (idxPath + 300).coerceAtMost(jsContent.length))
+            val m = Pattern.compile("""element:(?:\(0,)?(?:\w+\.)?jsx\)\(([a-zA-Z0-9_$]+)""").matcher(chunk)
+            if (m.find()) {
+                compName = m.group(1)
+            }
+        }
+    }
+
+    println("SCOPED JS FOR $pkgPath: COMPNAME=$compName")
 
     if (compName != null) {
-        val compDecl = "$compName="
-        val idx = jsContent.indexOf(compDecl)
+        val patterns = listOf(
+            "$compName=()=>",
+            "$compName=function",
+            "$compName=e=>",
+            "$compName=t=>",
+            "$compName=("
+        )
+        var idx = -1
+        for (pat in patterns) {
+            val found = jsContent.indexOf(pat)
+            if (found != -1) {
+                idx = found
+                break
+            }
+        }
+        if (idx == -1) {
+            idx = jsContent.indexOf("$compName=")
+        }
+
         if (idx != -1) {
             val start = idx
-            val end = (idx + 8000).coerceAtMost(jsContent.length)
+            val end = (idx + 10000).coerceAtMost(jsContent.length)
             return jsContent.substring(start, end)
         }
     }
@@ -1039,13 +1096,20 @@ fun extractPriceByTargetClass(
                         extractedPairs.add(Pair(getString(R.string.price, "Price"), it.replace("\\", "").trim()))
                     }
                 }
+
+                if (extractedPairs.isEmpty()) {
+                    val extractedPrice = extractPriceFromJsObject(jsContent, config.keyword)
+                    if (extractedPrice != null) {
+                        extractedPairs.add(Pair("Price", extractedPrice))
+                    }
+                }
             }
             if (extractedPairs.isEmpty()) {
                 val scopedJs = getScopedJsTextForPackage(jsContent, config.urlPath)
                 if (scopedJs.isNotEmpty()) {
                     if (config.classB != null) {
-                        val regexA = Pattern.compile("""className:"${Pattern.quote(config.classA)}"[^}]*?children:(?:\["|")?([^"\}]+)""")
-                        val regexB = Pattern.compile("""className:"${Pattern.quote(config.classB)}"[^}]*?children:(?:\["|")?([^"\}]+)""")
+                        val regexA = Pattern.compile("""className:["'`]${Pattern.quote(config.classA)}["'`][^}]*?children:(?:\[["'`]|["'`])?([^"'`\}]+)""")
+                        val regexB = Pattern.compile("""className:["'`]${Pattern.quote(config.classB)}["'`][^}]*?children:(?:\[["'`]|["'`])?([^"'`\}]+)""")
 
                         val matcherA = regexA.matcher(scopedJs)
                         val matcherB = regexB.matcher(scopedJs)
@@ -1071,7 +1135,7 @@ fun extractPriceByTargetClass(
                             }
                         }
                     } else {
-                        val regex = Pattern.compile("""className:"${Pattern.quote(config.classA)}"[^}]*?children:(?:\["|")?([^"\}]+)""")
+                        val regex = Pattern.compile("""className:["'`]${Pattern.quote(config.classA)}["'`][^}]*?children:(?:\[["'`]|["'`])?([^"'`\}]+)""")
                         val matcher = regex.matcher(scopedJs)
                         while (matcher.find()) {
                             matcher.group(1)?.let {

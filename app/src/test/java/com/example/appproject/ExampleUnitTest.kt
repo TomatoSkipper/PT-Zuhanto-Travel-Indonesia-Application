@@ -11,13 +11,22 @@ class ExampleUnitTest {
     @Test
     fun testTargetClassPriceExtraction() {
         val baseUrl = "https://www.zuhantotravelindo.id"
-        val jsUrl = "$baseUrl/assets/index-BKa6SZ3a.js"
-        val jsContent = Jsoup.connect(jsUrl).ignoreContentType(true).userAgent("Mozilla/5.0").timeout(10000).execute().body()
+        val doc = Jsoup.connect(baseUrl).userAgent("Mozilla/5.0").get()
+        var jsUrl: String? = null
+        for (elem in doc.select("script[src]")) {
+            val src = elem.attr("src")
+            if (src.contains("index-") && src.endsWith(".js")) {
+                jsUrl = if (src.startsWith("http")) src else if (src.startsWith("/")) "$baseUrl$src" else "$baseUrl/$src"
+                break
+            }
+        }
+        println("FOUND JS URL: $jsUrl")
+        val jsContent = if (jsUrl != null) Jsoup.connect(jsUrl).ignoreContentType(true).userAgent("Mozilla/5.0").timeout(10000).execute().body() else ""
+        println("JS CONTENT LENGTH: ${jsContent.length}")
 
         // 1. Bromo Sunrise Package
         val bromoUrl = "$baseUrl/bromo-sunrise-package"
         val (bromoPrice, bromoTiers) = extractPriceByTargetClass(bromoUrl, null, jsContent)
-        assertEquals(extractPriceByTargetClass(bromoUrl, null, jsContent).first, bromoPrice)
         assertEquals(5, bromoTiers.size)
         assertEquals(1625000, bromoTiers[0].pricePerPaxInt)
 
