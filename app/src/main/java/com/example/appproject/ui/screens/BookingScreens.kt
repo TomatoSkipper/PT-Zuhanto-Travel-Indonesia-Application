@@ -432,7 +432,7 @@ fun MyBookingsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = if (selectedTab == 0) "No active bookings found" else "No history bookings found",
+                        text = if (selectedTab == 0) stringResource(R.string.no_active_bookings_found) else stringResource(R.string.no_history_bookings_found),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF64748B),
@@ -528,7 +528,7 @@ fun MyBookingsScreen(
                     icon = Icons.Default.Print,
                     iconBackgroundColor = Color(0xFFF1F5F9),
                     iconTintColor = Color(0xFF334155),
-                    label = if (isPaid) "Print receipt" else "Print invoice",
+                    label = if (isPaid) stringResource(R.string.print_receipt) else stringResource(R.string.print_invoice),
                     onClick = {
                         showMenuBottomSheet = false
                         selectedBookingForMenu = null
@@ -548,7 +548,7 @@ fun MyBookingsScreen(
                         icon = Icons.Default.HighlightOff,
                         iconBackgroundColor = Color(0xFFFEE2E2),
                         iconTintColor = Color(0xFFDC2626),
-                        label = "Cancel booking",
+                        label = stringResource(R.string.cancel_booking),
                         labelColor = Color(0xFFDC2626),
                         onClick = {
                             showMenuBottomSheet = false

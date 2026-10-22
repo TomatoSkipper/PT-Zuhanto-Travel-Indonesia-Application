@@ -55,8 +55,6 @@
     <string name="official_partners_content">OFFICIAL PARTNERS</string>
     <string name="promo_trip">Promo Trip</string>
     <string name="partner">Partner</string>
-    <string name="show_password">Show password</string>
-    <string name="hide_password">Hide password</string>
     <string name="invalid_email">Invalid email address</string>
     <string name="error_invalid_phone">Enter a valid phone number (8-15 digits).</string>
     <string name="error_phone_not_registered">No account found with this phone number. Please register first.</string>
@@ -1043,17 +1041,7 @@
     <string name="deactivate">Deactivate</string>
 
     <string name="company_country">INDONESIA</string>
-    <string name="user_accounts_subtitle">Kelola akun pengguna yang terhubung dengan sistem.</string>
     <string name="user_accounts_list_title">Registered User Account</string>
-    <string name="showing_x_of_y_users">Menampilkan %1$d dari %2$d pengguna</string>
-    <string name="col_user_id">ID Pengguna</string>
-    <string name="col_name">Nama</string>
-    <string name="col_email_phone">Email / Telefon</string>
-    <string name="col_status">Status</string>
-    <string name="col_action">Aksi</string>
-    <string name="status_diblokir">Diblokir</string>
-    <string name="search_users_dashboard_placeholder">Cari berdasarkan ID, username atau nomor telefon...</string>
-    <string name="akun_pengguna_count">akun pengguna</string>
     <string name="find_using_id_username_email_or_phone">Find using Username, Email or Phone</string>
 
     <string name="dialog_ban_account_title">BAN ACCOUNT</string>
@@ -1070,14 +1058,6 @@
     <string name="dialog_delete_account_btn">Delete account</string>
     <string name="dialog_keep_account_btn">Keep account</string>
 
-    <string name="dialog_unban_account_title">Akun Diblokir</string>
-    <string name="dialog_unban_this_account_q">Apakah Anda ingin membuka blokir akun ini?</string>
-    <string name="dialog_unban_desc">Akun ini saat ini tidak dapat diakses. Anda dapat melihat alasan pemblokiran sebelum membuka blokir.</string>
-    <string name="dialog_banned_reason_label">Alasan Pemblokiran</string>
-    <string name="dialog_banned_reason_default">Terlapor melakukan aktivitas mencurigakan (pesan spam / penyalahgunaan akun).</string>
-    <string name="dialog_banned_date_label">Tanggal Diblokir</string>
-    <string name="dialog_unban_account_btn">Buka Blokir Akun</string>
-    <string name="dialog_cancel_btn">Batal</string>
     <string name="payment_time_expired">Payment time expired</string>
     <string name="contact_us_directly">Contact Us Directly</string>
     <string name="operating_hours">Operating Hours</string>
@@ -1098,5 +1078,17 @@
     <string name="email_subtext">Detailed Information</string>
     <string name="back_to_home">Back to Home</string>
     <string name="no_reason">No Reason</string>
+
+    <!-- Unban Account Dialog -->
+    <string name="unban_account_title">UNBAN ACCOUNT</string>
+    <string name="dialog_unban_this_account_q">Unban this account?</string>
+    <string name="dialog_unban_desc">This will restore access to the account.</string>
+    <string name="dialog_banned_reason_label">Ban Reason</string>
+    <string name="dialog_banned_date_label">Banned Date</string>
+    <string name="dialog_cancel_btn">Cancel</string>
+    <string name="dialog_unban_account_btn">Unban account</string>
+    <string name="no_active_bookings_found">No active bookings found</string>
+    <string name="no_history_bookings_found">No history bookings found</string>
+    <string name="home_dashboard">Home</string>
 
 </resources>

@@ -601,7 +601,7 @@ fun BanAccountDialog(
                         colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
                     ) {
                         Text(
-                            text = stringResource(R.string.dialog_cancel_btn),
+                            text = stringResource(R.string.cancel),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0284C7)
@@ -884,7 +884,7 @@ fun UnbanAccountDialog(
                             )
                         }
                         Text(
-                            text = stringResource(R.string.dialog_unban_account_title),
+                            text = stringResource(R.string.unban_account_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color(0xFF0F172A),

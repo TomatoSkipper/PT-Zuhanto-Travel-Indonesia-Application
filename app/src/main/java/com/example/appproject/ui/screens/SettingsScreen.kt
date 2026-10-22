@@ -220,12 +220,26 @@ fun LanguageListBox(modifier: Modifier = Modifier) {
     val languages = remember {
         listOf(
             LanguageOption("en", "English", "English"),
-            LanguageOption("ms", "Malay", "Bahasa Melayu")
+            LanguageOption("id", "Indonesia", "Bahasa Indonesia")
         )
     }
 
     var currentLanguageCode by remember {
-        mutableStateOf(AppCompatDelegate.getApplicationLocales().get(0)?.language ?: "en")
+        mutableStateOf(
+            try {
+                val appLocales = AppCompatDelegate.getApplicationLocales()
+                val rawCode = if (!appLocales.isEmpty) {
+                    appLocales.get(0)?.language
+                } else {
+                    null
+                } ?: java.util.Locale.getDefault().language
+
+                val normalized = rawCode.lowercase(java.util.Locale.ROOT)
+                if (normalized == "in" || normalized.startsWith("id")) "id" else "en"
+            } catch (e: Exception) {
+                "en"
+            }
+        )
     }
 
     Card(

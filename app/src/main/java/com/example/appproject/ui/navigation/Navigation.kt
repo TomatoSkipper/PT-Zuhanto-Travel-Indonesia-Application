@@ -432,7 +432,11 @@ fun AppNavigationDrawer() {
                                 }
                             },
                             icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                            label = { Text("Home") },
+                            label = { Text(
+                                text = stringResource(R.string.home_dashboard),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            ) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = PrimaryBlue,
                                 selectedTextColor = PrimaryBlue,

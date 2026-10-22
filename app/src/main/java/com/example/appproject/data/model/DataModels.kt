@@ -14,7 +14,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-//Set up the language change between Malay and English
+//Set up the language change between Indonesian and English
 object LanguageManager {
     fun setLanguage(code: String) {
         val local = Locale(code)
@@ -74,7 +74,7 @@ fun getFormattedTierPrice(tier: PricingTier): String {
 
 fun parseBookingDate(dateStr: String): Date? {
     if (dateStr.isBlank()) return null
-    val locales = listOf(Locale.US, Locale("ms"), Locale.getDefault(), Locale.ENGLISH)
+    val locales = listOf(Locale.US, Locale("id"), Locale.getDefault(), Locale.ENGLISH)
     val patterns = listOf("dd MMM yyyy", "dd-MM-yyyy", "yyyy-MM-dd", "dd/MM/yyyy")
     for (pat in patterns) {
         for (loc in locales) {
