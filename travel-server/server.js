@@ -174,11 +174,11 @@ OUTPUT FORMAT
 Return ONLY valid JSON, with no code fences and no text outside the JSON:
 
 {
-  "message": "string, the reply shown in the chat bubble",
+  "message": "string, the reply shown in the chat bubble (in user's language)",
   "places": [
     {
       "name": "string",
-      "note": "string, max 12 words",
+      "note": "string, max 12 words (in user's language)",
       "type": "visit | stay | eat",
       "price_range": "string, estimated price range e.g. Free, Rp 25.000 - Rp 50.000",
       "image_url": "string, valid image URL or empty string if unavailable"
