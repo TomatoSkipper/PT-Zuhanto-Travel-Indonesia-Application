@@ -184,7 +184,7 @@ Return ONLY valid JSON, with no code fences and no text outside the JSON:
       "image_url": "string, valid image URL or empty string if unavailable"
     }
   ],
-  "suggestions": ["string, max 4 words", "string, max 4 words"],
+  "suggestions": ["string, max 4 words in user's language", "string, max 4 words in user's language"],
   "handoff": false
 }
 
