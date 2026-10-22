@@ -33,6 +33,10 @@ object NetworkClient {
             }
 
             val requestBuilder = original.newBuilder()
+            val userLanguage = java.util.Locale.getDefault().language
+            if (userLanguage.isNotBlank()) {
+                requestBuilder.header("Accept-Language", userLanguage)
+            }
             if (!token.isNullOrEmpty()) {
                 requestBuilder.header("Authorization", "Bearer $token")
             }

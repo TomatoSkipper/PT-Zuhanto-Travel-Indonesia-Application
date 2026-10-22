@@ -7,7 +7,8 @@ data class ChatRequest(
     val userMessage: String,
     val destination: String,
     val days: Int = 3,
-    val currentItinerary: List<String> = emptyList()
+    val currentItinerary: List<String> = emptyList(),
+    val language: String = java.util.Locale.getDefault().displayLanguage
 )
 
 // Item recommended by AI (Place to visit, stay, or eat)

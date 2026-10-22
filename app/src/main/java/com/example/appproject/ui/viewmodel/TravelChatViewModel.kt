@@ -62,7 +62,8 @@ class TravelChatViewModel(application: Application) : AndroidViewModel(applicati
                     userMessage = userText,
                     destination = activeDest,
                     days = days,
-                    currentItinerary = currentItinerary
+                    currentItinerary = currentItinerary,
+                    language = java.util.Locale.getDefault().displayLanguage
                 )
                 val response = NetworkClient.apiService.getAiSuggestion(request)
 
