@@ -57,9 +57,9 @@ fun TravelChatScreen(
     val listState = rememberLazyListState()
 
     val defaultTravel = stringResource(R.string.general_travel)
-    val whatAreBestPlacesPrompt = stringResource(R.string.what_are_the_best_places_to_visit_in)
-    val whereToStayPrompt = stringResource(R.string.where_are_the_best_places_to_stay_in)
-    val whereToEatPrompt = stringResource(R.string.what_are_the_best_places_to_eat_in)
+    val whatAreBestPlacesPrompt = stringResource(R.string.what_are_the_best_places_to_visit_in).trim()
+    val whereToStayPrompt = stringResource(R.string.where_are_the_best_places_to_stay_in).trim()
+    val whereToEatPrompt = stringResource(R.string.what_are_the_best_places_to_eat_in).trim()
     val displayDestination = remember(destination, defaultTravel) {
         if (destination.isNotBlank() && !destination.equals(defaultTravel, ignoreCase = true)) {
             destination
@@ -303,9 +303,9 @@ fun TravelChatScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listOf(
-                        "Where to stay" to "Where are the best places to stay in $displayDestination?",
-                        "Where to eat" to "What are the best places to eat in $displayDestination?",
-                        "Best places to visit" to "What are the best places to visit in $displayDestination?"
+                        stringResource(R.string.where_to_stay) to "$whereToStayPrompt $displayDestination?",
+                        stringResource(R.string.where_to_eat) to "$whereToEatPrompt $displayDestination?",
+                        stringResource(R.string.best_places_to_visit) to "$whatAreBestPlacesPrompt $displayDestination?"
                     ).forEach { (label, prompt) ->
                         Surface(
                             shape = RoundedCornerShape(20.dp),
@@ -342,7 +342,7 @@ fun TravelChatScreen(
                     modifier = Modifier.weight(1f),
                     placeholder = {
                         Text(
-                            text = "Ask about places to visit, stay or eat",
+                            text = stringResource(R.string.sample_prompt),
                             color = Color(0xFF94A3B8),
                             fontSize = 14.sp
                         )
