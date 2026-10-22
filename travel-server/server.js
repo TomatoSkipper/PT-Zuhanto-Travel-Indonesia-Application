@@ -152,7 +152,6 @@ app.post('/api/chat-suggest', optionalVerifyFirebaseToken, async (req, res) => {
 
 CONTEXT (filled in by the app)
 - Selected trip: ${cleanDestination}
-- Customer language: ${appLanguage}
 
 WHAT YOU HELP WITH
 - Places to visit, where to stay, where to eat, and simple local tips (best time of day, what to wear or bring) around the selected trip's destination.
