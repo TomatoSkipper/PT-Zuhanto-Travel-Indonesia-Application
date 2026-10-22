@@ -181,7 +181,8 @@ fun BookingDialog(
                             (totalBasePriceInt * appliedDiscount) / 100
                         )
                     } else "IDR 0",
-                    voucherUsed = if (appliedDiscount > 0) voucherCode.trim().uppercase() else ""
+                    voucherUsed = if (appliedDiscount > 0) voucherCode.trim().uppercase() else "",
+                    confirmationTimestamp = 0L
                 )
             )
             showBookingSuccessDialog = true

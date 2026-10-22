@@ -1376,10 +1376,10 @@ fun BookingEditDialog(
                 onClick = {
                     val wasConfirmed = normalizeBookingStatus(booking.status) == "Confirmed"
                     val isConfirmedNow = normalizeBookingStatus(bookingStatus) == "Confirmed"
-                    val ts = if (isConfirmedNow && (!wasConfirmed || booking.confirmationTimestamp == 0L)) {
-                        System.currentTimeMillis()
-                    } else {
-                        booking.confirmationTimestamp
+                    val ts = when {
+                        isConfirmedNow && (!wasConfirmed || booking.confirmationTimestamp == 0L) -> System.currentTimeMillis()
+                        isConfirmedNow -> booking.confirmationTimestamp
+                        else -> 0L
                     }
                     onSave(
                         booking.copy(

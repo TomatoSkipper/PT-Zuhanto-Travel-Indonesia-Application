@@ -1097,5 +1097,6 @@
     <string name="whatsapp_subtext">Quick &amp; Convenient</string>
     <string name="email_subtext">Detailed Information</string>
     <string name="back_to_home">Back to Home</string>
+    <string name="no_reason">No Reason</string>
 
 </resources>

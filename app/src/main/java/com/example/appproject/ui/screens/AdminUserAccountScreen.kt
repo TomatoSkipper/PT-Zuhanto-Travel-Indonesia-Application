@@ -1026,7 +1026,7 @@ fun UnbanAccountDialog(
                             )
                         }
                         Text(
-                            text = user.bannedReason.ifBlank { stringResource(R.string.dialog_banned_reason_default) },
+                            text = user.bannedReason.ifBlank { stringResource(R.string.no_reason) },
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF334155),
                             fontSize = 12.sp
@@ -1274,7 +1274,7 @@ fun UserAccountCard(
                                     .background(if (user.isBanned) Color(0xFFDC2626) else Color(0xFF16A34A))
                             )
                             Text(
-                                text = if (user.isBanned) stringResource(R.string.status_diblokir) else stringResource(R.string.active),
+                                text = if (user.isBanned) stringResource(R.string.banned) else stringResource(R.string.active),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = if (user.isBanned) Color(0xFFB91C1C) else Color(0xFF15803D),
