@@ -1111,5 +1111,9 @@
     <string name="transfer_to_our_official_company_account">Transfer to our official company account</string>
     <string name="pending_admin_verification">Pending admin verification.</string>
     <string name="send_proof_to_whatsapp">Send Proof to WhatsApp</string>
+    <string name="waiting_admin_verification">Waiting admin verification</string>
+    <string name="payment_is_awaiting_for_admin_verification">Payment is awaiting for admin verification</string>
+    <string name="instant_confirmation_no_waiting_time">Instant confirmation. No payment waiting time.</string>
+    <string name="payment_time_remaining">Payment Time Remaining</string>
 
 </resources>

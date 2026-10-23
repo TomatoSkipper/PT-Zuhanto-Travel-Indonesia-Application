@@ -1116,7 +1116,7 @@ fun PaymentCountdownTimer(
                 )
                 Column {
                     Text(
-                        text = "Payment Time Remaining",
+                        text = stringResource(R.string.payment_time_remaining),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFB45309)
@@ -1396,7 +1396,7 @@ fun UserBookingCard(
                         onClick = {
                             if (normPayment == "Paid") onViewReceipt(booking.bookingId)
                             else if (booking.proofOfPaymentUploaded) {
-                                Toast.makeText(context, "Payment is awaiting admin verification", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, R.string.payment_is_awaiting_for_admin_verification, Toast.LENGTH_SHORT).show()
                             }
                             else if (normStatus == "Confirmed") onPayNow()
                             else onViewInvoice(booking.bookingId)
@@ -1414,7 +1414,7 @@ fun UserBookingCard(
                         }
                         val buttonLabel = when {
                             normPayment == "Paid" -> stringResource(R.string.view_receipt)
-                            booking.proofOfPaymentUploaded -> "Waiting admin verification"
+                            booking.proofOfPaymentUploaded -> stringResource(R.string.waiting_admin_verification)
                             normStatus == "Confirmed" -> stringResource(R.string.pay_now)
                             else -> stringResource(R.string.view_invoice)
                         }

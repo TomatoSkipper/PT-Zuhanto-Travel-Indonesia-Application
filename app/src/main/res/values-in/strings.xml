@@ -1111,5 +1111,9 @@
     <string name="transfer_to_our_official_company_account">Transfer ke rekening resmi perusahaan kami</string>
     <string name="pending_admin_verification">Menunggu verifikasi admin.</string>
     <string name="send_proof_to_whatsapp">Kirim Bukti ke WhatsApp</string>
+    <string name="waiting_admin_verification">Menunggu verifikasi admin</string>
+    <string name="payment_is_awaiting_for_admin_verification">Pembayaran sedang menunggu verifikasi admin</string>
+    <string name="instant_confirmation_no_waiting_time">Konfirmasi instan. Tidak perlu menunggu proses pembayaran.</string>
+    <string name="payment_time_remaining">Sisa Waktu Pembayaran</string>
 
 </resources>

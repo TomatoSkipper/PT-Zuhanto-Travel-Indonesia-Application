@@ -178,6 +178,10 @@ fun PaymentScreen(
     var isProcessingPayment by remember { mutableStateOf(false) }
     var paymentSuccessDialog by remember { mutableStateOf(false) }
 
+    // Proof file temporary selection
+    var selectedProofUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedProofFileName by remember { mutableStateOf("") }
+
     // Promo / Voucher
     var voucherCodeInput by remember { mutableStateOf("") }
     var appliedVoucherCode by remember { mutableStateOf("") }
@@ -378,14 +382,36 @@ fun PaymentScreen(
                             Button(
                                 onClick = {
                                     val b = currentBooking
-                                    sendProofToWhatsApp(
-                                        context = context,
-                                        fileUri = if (b.proofOfPaymentUrl.isNotBlank()) Uri.parse(b.proofOfPaymentUrl) else null,
-                                        bookingId = b.bookingId,
-                                        customerName = b.customerName.ifBlank { b.customerUsername },
-                                        finalPrice = b.finalPrice,
-                                        destination = b.destination
-                                    )
+                                    if (b != null) {
+                                        val hasFileAttached = selectedProofUri != null || b.proofOfPaymentUrl.isNotBlank()
+                                        if (!hasFileAttached) {
+                                            Toast.makeText(context, R.string.please_select_a_file, Toast.LENGTH_SHORT).show()
+                                            return@Button
+                                        }
+
+                                        scope.launch {
+                                            val fileUriToUse = selectedProofUri ?: if (b.proofOfPaymentUrl.isNotBlank()) Uri.parse(b.proofOfPaymentUrl) else null
+                                            val fileNameToSave = selectedProofFileName.ifBlank { b.proofOfPaymentFileName.ifBlank { "proof_receipt" } }
+                                            val updatedBooking = b.copy(
+                                                proofOfPaymentUploaded = true,
+                                                proofOfPaymentFileName = fileNameToSave,
+                                                proofOfPaymentUrl = selectedProofUri?.toString() ?: b.proofOfPaymentUrl,
+                                                paymentStatus = "Pending",
+                                                paymentMethod = "Bank Transfer"
+                                            )
+                                            firebaseRepo.updateBooking(updatedBooking)
+                                            booking = updatedBooking
+
+                                            sendProofToWhatsApp(
+                                                context = context,
+                                                fileUri = fileUriToUse,
+                                                bookingId = b.bookingId,
+                                                customerName = b.customerName.ifBlank { b.customerUsername },
+                                                finalPrice = b.finalPrice,
+                                                destination = b.destination
+                                            )
+                                        }
+                                    }
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -517,7 +543,7 @@ fun PaymentScreen(
                                     discountValue = calcDisc
                                     appliedVoucherCode = code
                                     isVoucherValid = true
-                                    voucherMessage = "$code applied, ${discPercent.toInt()}% off"
+                                    voucherMessage = "$code ," + context.getString(R.string.applied) + "${discPercent.toInt()}% off"
                                 }
                             } else {
                                 voucherMessage = invalidVoucherMsg
@@ -548,7 +574,11 @@ fun PaymentScreen(
                     BankTransferSection(
                         booking = b,
                         firebaseRepo = firebaseRepo,
-                        onBookingUpdated = { updated -> booking = updated }
+                        onBookingUpdated = { updated -> booking = updated },
+                        onFilePicked = { uri, fileName ->
+                            selectedProofUri = uri
+                            selectedProofFileName = fileName
+                        }
                     )
                 }
 
@@ -573,7 +603,6 @@ fun PaymentScreen(
             when {
                 pm.contains("card") || pm.contains("stripe") -> "Credit / debit card"
                 pm.contains("bank") || pm.contains("transfer") -> "Bank transfer"
-                pm.contains("wallet") || pm.contains("qris") -> "E-Wallet / QRIS"
                 else -> b.paymentMethod.ifBlank { "Credit / debit card" }
             }
         }
@@ -1234,7 +1263,7 @@ private fun StripePaymentMethodCard() {
                         modifier = Modifier.size(18.dp)
                     )
                     Text(
-                        text = "Instant confirmation via Stripe. No proof of payment required for card payments.",
+                        text = stringResource(R.string.instant_confirmation_no_waiting_time),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF047857)
@@ -1436,90 +1465,55 @@ private fun parseDestinationInfo(destination: String): Pair<String, String> {
 
 private suspend fun createStripePaymentIntent(
     amountInCurrency: Double,
-    secretKey: String = "",
+    secretKey: String = com.example.appproject.BuildConfig.STRIPE_SECRET_KEY,
     currency: String = "idr",
     paymentMethodType: String? = null
 ): Pair<String?, String?> = withContext(Dispatchers.IO) {
     try {
-        // 1. Ask backend server (Render) to create PaymentIntent securely using process.env.STRIPE_SECRET_KEY
-        val serverUrl = URL("https://pt-zuhanto-travel-app-project.onrender.com/api/create-payment-intent")
-        val conn = serverUrl.openConnection() as HttpURLConnection
-        conn.requestMethod = "POST"
-        conn.setRequestProperty("Content-Type", "application/json")
-        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-        if (user != null) {
-            try {
-                val token = user.getIdToken(false).await().token
-                if (!token.isNullOrEmpty()) {
-                    conn.setRequestProperty("Authorization", "Bearer $token")
-                }
-            } catch (_: Exception) {}
-        }
-        conn.connectTimeout = 30000
-        conn.readTimeout = 30000
-        conn.doOutput = true
-
-        val jsonBody = JSONObject().apply {
-            put("amount", amountInCurrency)
-            put("currency", currency)
-            if (secretKey.isNotBlank()) put("secretKey", secretKey)
+        if (secretKey.isBlank()) {
+            return@withContext Pair(null, "Stripe secret key is missing in local properties")
         }
 
-        conn.outputStream.use { os ->
-            os.write(jsonBody.toString().toByteArray(Charsets.UTF_8))
+        val stripeUrl = URL("https://api.stripe.com/v1/payment_intents")
+        val stripeConn = stripeUrl.openConnection() as HttpURLConnection
+        stripeConn.requestMethod = "POST"
+        stripeConn.setRequestProperty("Authorization", "Bearer $secretKey")
+        stripeConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+        stripeConn.connectTimeout = 15000
+        stripeConn.readTimeout = 15000
+        stripeConn.doOutput = true
+
+        val amountInt = (amountInCurrency * 100).toLong().coerceAtLeast(100L)
+        val postData = if (!paymentMethodType.isNullOrEmpty()) {
+            "amount=$amountInt&currency=$currency&payment_method_types[]=$paymentMethodType"
+        } else {
+            "amount=$amountInt&currency=$currency&automatic_payment_methods[enabled]=true"
         }
 
-        val responseCode = conn.responseCode
-        val inputStream = if (responseCode in 200..299) conn.inputStream else conn.errorStream
-        val responseText = inputStream?.bufferedReader()?.use { it.readText() } ?: ""
+        stripeConn.outputStream.use { os ->
+            os.write(postData.toByteArray(Charsets.UTF_8))
+        }
+
+        val responseCode = stripeConn.responseCode
+        val stream = if (responseCode in 200..299) stripeConn.inputStream else stripeConn.errorStream
+        val responseText = stream?.bufferedReader()?.use { it.readText() } ?: ""
 
         if (responseCode in 200..299) {
             val jsonObject = JSONObject(responseText)
-            val clientSecret = jsonObject.optString("clientSecret", "")
+            val clientSecret = jsonObject.optString("client_secret", "")
             if (clientSecret.isNotBlank()) {
                 return@withContext Pair(clientSecret, null)
             }
-        } else {
-            Log.e("PaymentScreen", "Server Stripe Error ($responseCode): $responseText")
-        }
-
-        // 2. Direct Stripe API fallback if secretKey was explicitly passed
-        if (secretKey.isNotBlank() && secretKey.startsWith("sk_")) {
-            val stripeUrl = URL("https://api.stripe.com/v1/payment_intents")
-            val stripeConn = stripeUrl.openConnection() as HttpURLConnection
-            stripeConn.requestMethod = "POST"
-            stripeConn.setRequestProperty("Authorization", "Bearer $secretKey")
-            stripeConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            stripeConn.connectTimeout = 10000
-            stripeConn.readTimeout = 10000
-            stripeConn.doOutput = true
-
-            val amountInt = (amountInCurrency * 100).toLong().coerceAtLeast(100L)
-            val postData = if (!paymentMethodType.isNullOrEmpty()) {
-                "amount=$amountInt&currency=$currency&payment_method_types[]=$paymentMethodType"
-            } else {
-                "amount=$amountInt&currency=$currency&automatic_payment_methods[enabled]=true"
-            }
-
-            stripeConn.outputStream.use { os ->
-                os.write(postData.toByteArray(Charsets.UTF_8))
-            }
-
-            val directCode = stripeConn.responseCode
-            val directStream = if (directCode in 200..299) stripeConn.inputStream else stripeConn.errorStream
-            val directText = directStream?.bufferedReader()?.use { it.readText() } ?: ""
-
-            if (directCode in 200..299) {
-                val jsonObject = JSONObject(directText)
-                val clientSecret = jsonObject.optString("client_secret", "")
-                if (clientSecret.isNotBlank()) return@withContext Pair(clientSecret, null)
-            }
-            return@withContext Pair(null, "Stripe Direct Error ($directCode): $directText")
         }
 
         val errorDetail = if (responseText.isNotBlank()) {
-            try { JSONObject(responseText).optString("error", responseText) } catch (_: Exception) { responseText }
-        } else "Failed to initialize Stripe PaymentIntent ($responseCode)"
+            try {
+                val jsonErr = JSONObject(responseText)
+                jsonErr.optJSONObject("error")?.optString("message", responseText) ?: responseText
+            } catch (_: Exception) {
+                responseText
+            }
+        } else "Stripe Error ($responseCode)"
 
         Pair(null, errorDetail)
     } catch (e: Exception) {
@@ -1652,14 +1646,13 @@ private fun PaymentCountdownTimerCard(confirmationTimestamp: Long) {
 private fun ProofOfPaymentCard(
     booking: Booking,
     firebaseRepo: FirebaseRepository,
-    onBookingUpdated: (Booking) -> Unit
+    onBookingUpdated: (Booking) -> Unit,
+    onFilePicked: (Uri?, String) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var selectedFileName by remember { mutableStateOf(booking.proofOfPaymentFileName) }
-    var isUploading by remember { mutableStateOf(false) }
     var uploadErrorMessage by remember { mutableStateOf<String?>(null) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -1692,22 +1685,8 @@ private fun ProofOfPaymentCard(
                 selectedUri = uri
                 selectedFileName = fileName
                 uploadErrorMessage = null
-                isUploading = true
-                scope.launch {
-                    val updatedBooking = booking.copy(
-                        proofOfPaymentUploaded = true,
-                        proofOfPaymentFileName = fileName,
-                        proofOfPaymentUrl = uri.toString(),
-                        paymentStatus = "Pending",
-                        paymentMethod = "Bank Transfer"
-                    )
-
-                    firebaseRepo.updateBooking(updatedBooking)
-                    onBookingUpdated(updatedBooking)
-                    isUploading = false
-
-                    Toast.makeText(context, R.string.proof_of_payment_saved, Toast.LENGTH_SHORT).show()
-                }
+                onFilePicked(uri, fileName)
+                Toast.makeText(context, R.string.proof_of_payment_saved, Toast.LENGTH_SHORT).show()
             } else {
                 uploadErrorMessage = context.getString(R.string.invalid_file_type)
                 Toast.makeText(context, uploadErrorMessage, Toast.LENGTH_LONG).show()
@@ -2066,7 +2045,8 @@ private fun PaymentMethodOptionSelector(
 private fun BankTransferSection(
     booking: Booking,
     firebaseRepo: FirebaseRepository,
-    onBookingUpdated: (Booking) -> Unit
+    onBookingUpdated: (Booking) -> Unit,
+    onFilePicked: (Uri?, String) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
@@ -2152,7 +2132,8 @@ private fun BankTransferSection(
             ProofOfPaymentCard(
                 booking = booking,
                 firebaseRepo = firebaseRepo,
-                onBookingUpdated = onBookingUpdated
+                onBookingUpdated = onBookingUpdated,
+                onFilePicked = onFilePicked
             )
         }
     }
