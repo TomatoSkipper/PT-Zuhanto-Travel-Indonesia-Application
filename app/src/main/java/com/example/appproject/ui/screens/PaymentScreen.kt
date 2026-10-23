@@ -1,5 +1,6 @@
 package com.example.appproject.ui.screens
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -29,10 +30,26 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Info
@@ -253,6 +270,8 @@ fun PaymentScreen(
         }
     }
 
+    var selectedPaymentOption by remember { mutableStateOf(PaymentOption.STRIPE_CARD) }
+
     val currentBooking = booking
     val basePriceStr = currentBooking?.basePrice?.ifBlank { currentBooking.finalPrice } ?: ""
     val rawBasePrice = if (basePriceStr.isNotBlank()) parseCurrencyToDouble(basePriceStr) else 3250000.0
@@ -275,79 +294,119 @@ fun PaymentScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp, vertical = 12.dp)
                     ) {
-                        Button(
-                            onClick = {
-                                isProcessingPayment = true
-                                scope.launch {
-                                    val targetCurrency = "idr"
-                                    val (clientSecret, errorMsg) = if (!stripeClientSecret.isNullOrBlank()) {
-                                        Pair(stripeClientSecret, null)
-                                    } else {
-                                        createStripePaymentIntent(
-                                            calculatedFinalPrice,
-                                            com.example.appproject.BuildConfig.STRIPE_SECRET_KEY,
-                                            currency = targetCurrency
-                                        )
-                                    }
+                        if (selectedPaymentOption == PaymentOption.STRIPE_CARD) {
+                            Button(
+                                onClick = {
+                                    isProcessingPayment = true
+                                    scope.launch {
+                                        val targetCurrency = "idr"
+                                        val (clientSecret, errorMsg) = if (!stripeClientSecret.isNullOrBlank()) {
+                                            Pair(stripeClientSecret, null)
+                                        } else {
+                                            createStripePaymentIntent(
+                                                calculatedFinalPrice,
+                                                com.example.appproject.BuildConfig.STRIPE_SECRET_KEY,
+                                                currency = targetCurrency
+                                            )
+                                        }
 
-                                    if (!clientSecret.isNullOrBlank()) {
-                                        isProcessingPayment = false
-                                        try {
-                                            val config = PaymentSheet.Configuration(
-                                                merchantDisplayName = "PT ZUHANTO TRAVEL INDONESIA"
-                                            )
-                                            paymentSheet.presentWithPaymentIntent(
-                                                clientSecret,
-                                                config
-                                            )
-                                        } catch (e: Exception) {
+                                        if (!clientSecret.isNullOrBlank()) {
                                             isProcessingPayment = false
-                                            Log.e("PaymentScreen", "Error launching PaymentSheet", e)
+                                            try {
+                                                val config = PaymentSheet.Configuration(
+                                                    merchantDisplayName = "PT ZUHANTO TRAVEL INDONESIA"
+                                                )
+                                                paymentSheet.presentWithPaymentIntent(
+                                                    clientSecret,
+                                                    config
+                                                )
+                                            } catch (e: Exception) {
+                                                isProcessingPayment = false
+                                                Log.e("PaymentScreen", "Error launching PaymentSheet", e)
+                                                Toast.makeText(
+                                                    context,
+                                                    "An error occurred while launching payment. Please try again.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        } else {
+                                            isProcessingPayment = false
+                                            Log.e("PaymentScreen", "Stripe Error: ${errorMsg ?: "Failed to generate client secret"}")
                                             Toast.makeText(
                                                 context,
-                                                "An error occurred while launching payment. Please try again.",
+                                                errorMsg ?: "Failed to initialize payment. Please try again later.",
                                                 Toast.LENGTH_LONG
                                             ).show()
                                         }
-                                    } else {
-                                        isProcessingPayment = false
-                                        Log.e("PaymentScreen", "Stripe Error: ${errorMsg ?: "Failed to generate client secret"}")
-                                        Toast.makeText(
-                                            context,
-                                            errorMsg ?: "Failed to initialize payment. Please try again later.",
-                                            Toast.LENGTH_LONG
-                                        ).show()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(54.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                enabled = !isProcessingPayment,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1662D8))
+                            ) {
+                                if (isProcessingPayment) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Lock,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = stringResource(R.string.pay) + " ${formatCurrency(calculatedFinalPrice)} via Card",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
                                     }
                                 }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            enabled = !isProcessingPayment,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1662D8))
-                        ) {
-                            if (isProcessingPayment) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = Color.White,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    val b = currentBooking
+                                    sendProofToWhatsApp(
+                                        context = context,
+                                        fileUri = if (b.proofOfPaymentUrl.isNotBlank()) Uri.parse(b.proofOfPaymentUrl) else null,
+                                        bookingId = b.bookingId,
+                                        customerName = b.customerName.ifBlank { b.customerUsername },
+                                        finalPrice = b.finalPrice,
+                                        destination = b.destination
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(54.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
+                            ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Outlined.Lock,
+                                        imageVector = Icons.Default.Share,
                                         contentDescription = null,
                                         tint = Color.White,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = stringResource(R.string.pay) + " ${formatCurrency(calculatedFinalPrice)}",
-                                        fontSize = 16.sp,
+                                        text = stringResource(R.string.send_proof_to_whatsapp),
+                                        fontSize = 15.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
                                     )
@@ -405,10 +464,19 @@ fun PaymentScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // 0. Payment Timer Banner
+                if (b.confirmationTimestamp > 0L && b.paymentStatus != "Paid") {
+                    if (b.proofOfPaymentUploaded) {
+
+                    } else {
+                        PaymentCountdownTimerCard(confirmationTimestamp = b.confirmationTimestamp)
+                    }
+                }
+
                 // 1. Booking Summary Card
                 BookingSummaryCard(booking = b)
 
-                // 2. Voucher & Promo Code Section
+                // 2. Promo Code Card
                 PromoCodeCard(
                     voucherCodeInput = voucherCodeInput,
                     onVoucherCodeChange = { voucherCodeInput = it },
@@ -466,10 +534,25 @@ fun PaymentScreen(
                     }
                 )
 
-                // 3. Payment Method Card
-                StripePaymentMethodCard()
+                // 3. Payment Method Section Selector
+                PaymentMethodOptionSelector(
+                    selectedOption = selectedPaymentOption,
+                    onOptionSelected = { selectedPaymentOption = it }
+                )
 
-                // 4. Price Breakdown Card
+                // 4. Active Section Content: When Credit/Debit Card is selected, Bank Transfer & Upload Proof are HIDDEN.
+                // When Bank Transfer is selected, Credit/Debit Card details are HIDDEN.
+                if (selectedPaymentOption == PaymentOption.STRIPE_CARD) {
+                    StripePaymentMethodCard()
+                } else {
+                    BankTransferSection(
+                        booking = b,
+                        firebaseRepo = firebaseRepo,
+                        onBookingUpdated = { updated -> booking = updated }
+                    )
+                }
+
+                // 5. Price Breakdown Card
                 PriceSummaryCard(
                     basePrice = rawBasePrice,
                     discount = discountValue,
@@ -1133,6 +1216,32 @@ private fun StripePaymentMethodCard() {
                 CardBadge(text = "JCB")
             }
 
+            Surface(
+                color = Color(0xFFECFDF5),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.5f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = Color(0xFF059669),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Instant confirmation via Stripe. No proof of payment required for card payments.",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF047857)
+                    )
+                }
+            }
+
             // Info note
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -1467,3 +1576,634 @@ private fun parseCurrencyToDouble(priceStr: String): Double {
 private fun formatCurrency(amount: Double): String {
     return "IDR " + String.format(Locale.US, "%,d", amount.toLong())
 }
+
+
+@Composable
+private fun PaymentCountdownTimerCard(confirmationTimestamp: Long) {
+    var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(confirmationTimestamp) {
+        if (confirmationTimestamp > 0L) {
+            while (true) {
+                currentTime = System.currentTimeMillis()
+                delay(1000L)
+            }
+        }
+    }
+
+    val deadline = confirmationTimestamp + 2L * 24 * 60 * 60 * 1000L
+    val timeLeftMs = (deadline - currentTime).coerceAtLeast(0L)
+
+    val totalSeconds = timeLeftMs / 1000L
+    val days = totalSeconds / (24 * 3600)
+    val hours = (totalSeconds % (24 * 3600)) / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    val timeString = buildString {
+        if (days > 0) append("${days}d ")
+        append(String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds))
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFFEF3C7),
+        border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f))
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFDE68A)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AccessTime,
+                    contentDescription = null,
+                    tint = Color(0xFFD97706),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Column {
+                Text(
+                    text = "Payment Time Remaining",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFB45309)
+                )
+                Text(
+                    text = timeString,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF92400E)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProofOfPaymentCard(
+    booking: Booking,
+    firebaseRepo: FirebaseRepository,
+    onBookingUpdated: (Booking) -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedFileName by remember { mutableStateOf(booking.proofOfPaymentFileName) }
+    var isUploading by remember { mutableStateOf(false) }
+    var uploadErrorMessage by remember { mutableStateOf<String?>(null) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {}
+
+            var fileName = "proof_of_payment"
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIdx != -1) {
+                        fileName = cursor.getString(nameIdx)
+                    }
+                }
+            }
+
+            val lower = fileName.lowercase()
+            val mimeType = (context.contentResolver.getType(uri) ?: "").lowercase()
+            val isPdfJpg = lower.endsWith(".pdf") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") ||
+                    mimeType.contains("pdf") || mimeType.contains("jpeg") || mimeType.contains("jpg")
+
+            if (isPdfJpg) {
+                selectedUri = uri
+                selectedFileName = fileName
+                uploadErrorMessage = null
+                isUploading = true
+                scope.launch {
+                    val updatedBooking = booking.copy(
+                        proofOfPaymentUploaded = true,
+                        proofOfPaymentFileName = fileName,
+                        proofOfPaymentUrl = uri.toString(),
+                        paymentStatus = "Pending",
+                        paymentMethod = "Bank Transfer"
+                    )
+
+                    firebaseRepo.updateBooking(updatedBooking)
+                    onBookingUpdated(updatedBooking)
+                    isUploading = false
+
+                    Toast.makeText(context, R.string.proof_of_payment_saved, Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                uploadErrorMessage = context.getString(R.string.invalid_file_type)
+                Toast.makeText(context, uploadErrorMessage, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFFEF3C7)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CloudUpload,
+                        contentDescription = null,
+                        tint = Color(0xFFD97706),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = stringResource(R.string.upload_proof_of_payment),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = stringResource(R.string.supported_formats),
+                        fontSize = 12.sp,
+                        color = Color(0xFF64748B)
+                    )
+                }
+            }
+
+            if (booking.proofOfPaymentUploaded) {
+                Surface(
+                    color = Color(0xFFECFDF5),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF059669),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.proof_of_payment_uploaded),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = Color(0xFF047857)
+                            )
+                        }
+                        if (booking.proofOfPaymentFileName.isNotBlank()) {
+                            Text(
+                                text = "File: ${booking.proofOfPaymentFileName}",
+                                fontSize = 12.sp,
+                                color = Color(0xFF065F46)
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.payment_remaining_time_had_been_paused),
+                            fontSize = 12.sp,
+                            color = Color(0xFF047857)
+                        )
+                    }
+                }
+            } else {
+
+            }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        filePickerLauncher.launch(
+                            arrayOf(
+                                "application/pdf",
+                                "image/jpeg",
+                                "image/jpg",
+                                "image/*"
+                            )
+                        )
+                    },
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF8FAFC),
+                border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = if (selectedFileName.endsWith(".pdf", ignoreCase = true)) Icons.Default.PictureAsPdf else Icons.Default.AttachFile,
+                            contentDescription = null,
+                            tint = Color(0xFF2563EB),
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = if (selectedFileName.isNotBlank()) selectedFileName else stringResource(R.string.tap_to_select),
+                            fontSize = 13.sp,
+                            fontWeight = if (selectedFileName.isNotBlank()) FontWeight.Bold else FontWeight.Normal,
+                            color = if (selectedFileName.isNotBlank()) Color(0xFF0F172A) else Color(0xFF64748B),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Text(
+                        text = if (selectedFileName.isNotBlank()) stringResource(R.string.change) else stringResource(R.string.browse),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2563EB)
+                    )
+                }
+            }
+
+            if (uploadErrorMessage != null) {
+                Text(
+                    text = uploadErrorMessage!!,
+                    fontSize = 12.sp,
+                    color = Color(0xFFDC2626),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+fun sendProofToWhatsApp(
+    context: Context,
+    fileUri: Uri?,
+    bookingId: String,
+    customerName: String,
+    finalPrice: String,
+    destination: String
+) {
+    val phone = "601169776714"
+    val cleanDestination = destination.split(" - Note:").firstOrNull()?.trim() ?: destination
+    val messageText = context.getString(R.string.proof_of_payment_for_booking) + "#$bookingId\n" + context.getString(R.string.customer) + ": $customerName \n" + context.getString(R.string.destination) + ": $destination \n" + context.getString(R.string.amount_paid) + ": $finalPrice"
+
+    if (fileUri != null) {
+        val mimeType = try {
+            context.contentResolver.getType(fileUri) ?: "*/*"
+        } catch (_: Exception) {
+            "*/*"
+        }
+
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, fileUri)
+            putExtra(Intent.EXTRA_TEXT, messageText)
+            putExtra("jid", "$phone@s.whatsapp.net")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        val whatsappIntent = Intent(intent).apply { setPackage("com.whatsapp") }
+        try {
+            context.startActivity(whatsappIntent)
+            return
+        } catch (_: Exception) {}
+
+        val w4bIntent = Intent(intent).apply { setPackage("com.whatsapp.w4b") }
+        try {
+            context.startActivity(w4bIntent)
+            return
+        } catch (_: Exception) {}
+
+        try {
+            val chooser = Intent.createChooser(intent, "Send Proof of Payment via WhatsApp")
+            context.startActivity(chooser)
+            return
+        } catch (_: Exception) {}
+    }
+
+    try {
+        val url = "https://api.whatsapp.com/send?phone=$phone&text=${Uri.encode(messageText)}"
+        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        context.startActivity(webIntent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "Could not open WhatsApp: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+    }
+}
+
+enum class PaymentOption {
+    STRIPE_CARD,
+    BANK_TRANSFER
+}
+
+@Composable
+private fun PaymentMethodOptionSelector(
+    selectedOption: PaymentOption,
+    onOptionSelected: (PaymentOption) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.select_payment_method),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A)
+            )
+
+            // Section 1: Credit / Debit Card (Stripe)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOptionSelected(PaymentOption.STRIPE_CARD) },
+                shape = RoundedCornerShape(14.dp),
+                color = if (selectedOption == PaymentOption.STRIPE_CARD) Color(0xFFEFF6FF) else Color(0xFFF8FAFC),
+                border = BorderStroke(
+                    1.5.dp,
+                    if (selectedOption == PaymentOption.STRIPE_CARD) Color(0xFF2563EB) else Color(0xFFE2E8F0)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    RadioButton(
+                        selected = selectedOption == PaymentOption.STRIPE_CARD,
+                        onClick = { onOptionSelected(PaymentOption.STRIPE_CARD) },
+                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF2563EB))
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CreditCard,
+                            contentDescription = null,
+                            tint = Color(0xFF2563EB),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.credit_debit_card),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
+                        )
+                        Text(
+                            text = stringResource(R.string.instant_payment),
+                            fontSize = 12.sp,
+                            color = Color(0xFF64748B)
+                        )
+                    }
+                }
+            }
+
+            // Section 2: Bank Transfer
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOptionSelected(PaymentOption.BANK_TRANSFER) },
+                shape = RoundedCornerShape(14.dp),
+                color = if (selectedOption == PaymentOption.BANK_TRANSFER) Color(0xFFFEF3C7).copy(alpha = 0.5f) else Color(0xFFF8FAFC),
+                border = BorderStroke(
+                    1.5.dp,
+                    if (selectedOption == PaymentOption.BANK_TRANSFER) Color(0xFFD97706) else Color(0xFFE2E8F0)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    RadioButton(
+                        selected = selectedOption == PaymentOption.BANK_TRANSFER,
+                        onClick = { onOptionSelected(PaymentOption.BANK_TRANSFER) },
+                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFD97706))
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccountBalance,
+                            contentDescription = null,
+                            tint = Color(0xFFD97706),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.bank_transfer),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
+                        )
+                        Text(
+                            text = stringResource(R.string.send_proof_of_payment),
+                            fontSize = 12.sp,
+                            color = Color(0xFF64748B)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BankTransferSection(
+    booking: Booking,
+    firebaseRepo: FirebaseRepository,
+    onBookingUpdated: (Booking) -> Unit
+) {
+    val context = LocalContext.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFFEF3C7)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AccountBalance,
+                        contentDescription = null,
+                        tint = Color(0xFFD97706),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = stringResource(R.string.bank_transfer_account_details),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = stringResource(R.string.transfer_to_our_official_company_account),
+                        fontSize = 12.sp,
+                        color = Color(0xFF64748B)
+                    )
+                }
+            }
+
+            HorizontalDivider(color = Color(0xFFF1F5F9))
+
+            Column {
+                Text(
+                    text = stringResource(R.string.account_holder_name),
+                    fontSize = 12.sp,
+                    color = Color(0xFF64748B)
+                )
+                Text(
+                    text = "PT ZUHANTO TRAVEL INDONESIA",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+            }
+
+            BankAccountRow(
+                bankName = "Bank Central Asia (BCA)",
+                accountNumber = "8830-192-888",
+                onCopy = {
+                    clipboardManager.setText(AnnotatedString("8830192888"))
+                    Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show()
+                }
+            )
+
+            BankAccountRow(
+                bankName = "Bank Mandiri",
+                accountNumber = "142-00-1982345-1",
+                onCopy = {
+                    clipboardManager.setText(AnnotatedString("1420019823451"))
+                    Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show()
+                }
+            )
+
+            ProofOfPaymentCard(
+                booking = booking,
+                firebaseRepo = firebaseRepo,
+                onBookingUpdated = onBookingUpdated
+            )
+        }
+    }
+}
+
+@Composable
+private fun BankAccountRow(
+    bankName: String,
+    accountNumber: String,
+    onCopy: () -> Unit
+) {
+    Surface(
+        color = Color(0xFFF8FAFC),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = bankName,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF475569)
+                )
+                Text(
+                    text = accountNumber,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF0F172A)
+                )
+            }
+
+            IconButton(
+                onClick = onCopy,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "Copy account number",
+                    tint = Color(0xFF2563EB),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+

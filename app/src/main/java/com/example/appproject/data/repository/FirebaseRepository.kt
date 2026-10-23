@@ -196,7 +196,7 @@ class FirebaseRepository {
             }
             val normStatus = normalizeBookingStatus(currentBooking.status)
             val normPayment = normalizePaymentStatus(currentBooking.paymentStatus)
-            if (normStatus == "Confirmed" && normPayment != "Paid" && currentBooking.confirmationTimestamp > 0L) {
+            if (normStatus == "Confirmed" && normPayment != "Paid" && currentBooking.confirmationTimestamp > 0L && !currentBooking.proofOfPaymentUploaded) {
                 if (currentTime - currentBooking.confirmationTimestamp > twoDaysMs) {
                     val cancelledBooking = currentBooking.copy(status = "Cancelled")
                     updateBooking(cancelledBooking)

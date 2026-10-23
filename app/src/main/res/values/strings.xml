@@ -1090,5 +1090,26 @@
     <string name="no_active_bookings_found">No active bookings found</string>
     <string name="no_history_bookings_found">No history bookings found</string>
     <string name="home_dashboard">Home</string>
+    <string name="invalid_file_type">Invalid file type. Only PDF, JPG, and JPEG files are allowed.</string>
+    <string name="upload_proof_of_payment">Upload Proof of Payment</string>
+    <string name="supported_formats">Supported formats: PDF, JPG, JPEG</string>
+    <string name="proof_of_payment_uploaded">Proof of Payment Uploaded</string>
+    <string name="payment_remaining_time_had_been_paused">Payment remaining time has been paused. Status remains Pending awaiting admin verification.</string>
+    <string name="tap_to_select">Tap to select PDF, JPG or JPEG file</string>
+    <string name="change">Change</string>
+    <string name="browse">Browse</string>
+    <string name="please_select_a_file">Please select a PDF, JPG, or JPEG file first</string>
+    <string name="proof_of_payment_saved">Proof of payment saved!</string>
+    <string name="send_resend_to_whatsapp">Send / Resend to WhatsApp</string>
+    <string name="upload_and_send_to_whastapp">Upload &amp; Send to WhatsApp</string>
+    <string name="proof_of_payment_for_booking">Proof of Payment for Booking</string>
+    <string name="select_payment_method">Select Payment Method</string>
+    <string name="instant_payment">Instant payment.</string>
+    <string name="send_proof_of_payment">Send proof of payment via WhatsApp.</string>
+    <string name="account_holder_name">Account Holder Name</string>
+    <string name="bank_transfer_account_details">Bank Transfer Account Details</string>
+    <string name="transfer_to_our_official_company_account">Transfer to our official company account</string>
+    <string name="pending_admin_verification">Pending admin verification.</string>
+    <string name="send_proof_to_whatsapp">Send Proof to WhatsApp</string>
 
 </resources>

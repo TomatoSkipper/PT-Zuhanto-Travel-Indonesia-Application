@@ -1090,5 +1090,26 @@
     <string name="no_active_bookings_found">Tidak ditemukan pemesanan aktif</string>
     <string name="no_history_bookings_found">Tidak ada riwayat pemesanan yang ditemukan</string>
     <string name="home_dashboard">Layar Beranda</string>
+    <string name="invalid_file_type">Jenis file tidak valid. Hanya file berformat PDF, JPG, dan JPEG yang diperbolehkan.</string>
+    <string name="upload_proof_of_payment">Unggah Bukti Pembayaran</string>
+    <string name="supported_formats">Format yang didukung: PDF, JPG, JPEG</string>
+    <string name="proof_of_payment_uploaded">Bukti Pembayaran Telah Diunggah</string>
+    <string name="payment_remaining_time_had_been_paused">Waktu tersisa untuk pembayaran telah dijeda. Status tetap \'Tertunda\' (Pending) sembari menunggu verifikasi admin.</string>
+    <string name="tap_to_select">Ketuk untuk memilih file PDF, JPG, atau JPEG</string>
+    <string name="change">Ubah</string>
+    <string name="browse">Telusuri</string>
+    <string name="please_select_a_file">Silakan pilih file PDF, JPG, atau JPEG terlebih dahulu</string>
+    <string name="proof_of_payment_saved">Bukti pembayaran telah disimpan!</string>
+    <string name="send_resend_to_whatsapp">Kirim / Kirim ulang ke WhatsApp</string>
+    <string name="upload_and_send_to_whastapp">Unggah &amp; Kirim ke WhatsApp</string>
+    <string name="proof_of_payment_for_booking">Bukti Pembayaran untuk Pemesanan</string>
+    <string name="select_payment_method">Pilih Metode Pembayaran</string>
+    <string name="instant_payment">Pembayaran instan.</string>
+    <string name="send_proof_of_payment">Kirim bukti pembayaran melalui WhatsApp.</string>
+    <string name="account_holder_name">Nama Pemilik Rekening</string>
+    <string name="bank_transfer_account_details">Detail Rekening Transfer Bank</string>
+    <string name="transfer_to_our_official_company_account">Transfer ke rekening resmi perusahaan kami</string>
+    <string name="pending_admin_verification">Menunggu verifikasi admin.</string>
+    <string name="send_proof_to_whatsapp">Kirim Bukti ke WhatsApp</string>
 
 </resources>

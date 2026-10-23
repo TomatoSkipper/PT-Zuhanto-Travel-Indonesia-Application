@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
@@ -348,6 +349,36 @@ fun AdminScreen(
                                 }
                                 Toast.makeText(context, R.string.booking_updated_successfully, Toast.LENGTH_SHORT).show()
                             }
+                        },
+                        onApprovePayment = {
+                            scope.launch {
+                                val ts = if (booking.confirmationTimestamp == 0L) System.currentTimeMillis() else booking.confirmationTimestamp
+                                val updatedBooking = booking.copy(
+                                    status = "Confirmed",
+                                    paymentStatus = "Paid",
+                                    confirmationTimestamp = ts
+                                )
+                                firebaseRepo.updateBooking(updatedBooking)
+                                bookingList = bookingList.map {
+                                    if (it.bookingId == updatedBooking.bookingId) updatedBooking else it
+                                }
+                                Toast.makeText(context, "Payment approved successfully", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onRejectPayment = {
+                            scope.launch {
+                                val updatedBooking = booking.copy(
+                                    proofOfPaymentUploaded = false,
+                                    proofOfPaymentUrl = "",
+                                    proofOfPaymentFileName = "",
+                                    paymentStatus = "Pending"
+                                )
+                                firebaseRepo.updateBooking(updatedBooking)
+                                bookingList = bookingList.map {
+                                    if (it.bookingId == updatedBooking.bookingId) updatedBooking else it
+                                }
+                                Toast.makeText(context, "Proof of payment rejected", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     )
                 }
@@ -452,7 +483,9 @@ fun AdminBookingCard(
     booking: Booking,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onConfirmBooking: () -> Unit
+    onConfirmBooking: () -> Unit,
+    onApprovePayment: () -> Unit = {},
+    onRejectPayment: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val details = remember(booking.destination) { parseBookingDestinationDetails(booking.destination) }
@@ -729,6 +762,14 @@ fun AdminBookingCard(
                             fontWeight = FontWeight.Bold,
                             color = paymentColor
                         )
+                        if (booking.proofOfPaymentUploaded && normPayment != "Paid") {
+                            Text(
+                                text = "• Proof Uploaded",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF059669)
+                            )
+                        }
                     }
 
                     // Baucar
@@ -795,6 +836,100 @@ fun AdminBookingCard(
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFF0F172A)
                         )
+                    }
+                }
+            }
+
+            // Proof of Payment Verification Banner (if uploaded and not paid)
+            if (booking.proofOfPaymentUploaded && normalizePaymentStatus(booking.paymentStatus) != "Paid") {
+                Spacer(modifier = Modifier.height(14.dp))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFFFEF3C7),
+                    border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudUpload,
+                                contentDescription = null,
+                                tint = Color(0xFFD97706),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Proof of Payment Attached",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFB45309)
+                            )
+                        }
+                        if (booking.proofOfPaymentFileName.isNotBlank()) {
+                            Text(
+                                text = "File: ${booking.proofOfPaymentFileName}",
+                                fontSize = 12.sp,
+                                color = Color(0xFF92400E)
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Button(
+                                onClick = onApprovePayment,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(38.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Approve",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+
+                            Button(
+                                onClick = onRejectPayment,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(38.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Reject",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1346,6 +1481,39 @@ fun BookingEditDialog(
                             focusedBorderColor = Color(0xFF0284C7)
                         )
                     )
+                }
+
+                if (booking.proofOfPaymentUploaded) {
+                    Surface(
+                        color = Color(0xFFECFDF5),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "Proof of Payment Attached",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF047857)
+                            )
+                            if (booking.proofOfPaymentFileName.isNotBlank()) {
+                                Text(
+                                    text = "File: ${booking.proofOfPaymentFileName}",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF065F46)
+                                )
+                            }
+                            Text(
+                                text = "Payment remaining time paused while awaiting payment status update to Paid.",
+                                fontSize = 11.sp,
+                                color = Color(0xFF047857)
+                            )
+                        }
+                    }
                 }
 
                 Row(

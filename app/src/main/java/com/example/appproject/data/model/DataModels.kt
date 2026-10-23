@@ -176,7 +176,10 @@ data class Booking(
     val paymentMethod: String = "",
     val userRating: Int = 0,
     val userReview: String = "",
-    val confirmationTimestamp: Long = 0L
+    val confirmationTimestamp: Long = 0L,
+    val proofOfPaymentUploaded: Boolean = false,
+    val proofOfPaymentUrl: String = "",
+    val proofOfPaymentFileName: String = ""
 ) {
     val discount: String
         get() = discountAmount

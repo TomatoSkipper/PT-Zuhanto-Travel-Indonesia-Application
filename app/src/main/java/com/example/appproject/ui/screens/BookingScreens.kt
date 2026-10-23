@@ -1029,7 +1029,48 @@ fun BottomSheetMenuItem(
 }
 
 @Composable
-fun PaymentCountdownTimer(confirmationTimestamp: Long, modifier: Modifier = Modifier) {
+fun PaymentCountdownTimer(
+    confirmationTimestamp: Long,
+    modifier: Modifier = Modifier,
+    proofUploaded: Boolean = false
+) {
+    if (proofUploaded) {
+        Surface(
+            modifier = modifier,
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFFECFDF5),
+            border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.5f))
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF059669),
+                    modifier = Modifier.size(18.dp)
+                )
+                Column {
+                    Text(
+                        text = stringResource(R.string.proof_of_payment_uploaded),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF047857)
+                    )
+                    Text(
+                        text = stringResource(R.string.pending_admin_verification),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF065F46)
+                    )
+                }
+            }
+        }
+        return
+    }
+
     var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
 
     LaunchedEffect(confirmationTimestamp) {
@@ -1200,6 +1241,7 @@ fun UserBookingCard(
                     normStatus == "Cancelled" -> Triple(stringResource(R.string.cancelled), Color(0xFFF1F5F9), Color(0xFF64748B))
                     normStatus == "Completed" -> Triple(stringResource(R.string.completed), Color(0xFFF1F5F9), Color(0xFF0F172A))
                     normPayment == "Paid" -> Triple(stringResource(R.string.paid), Color.Transparent, Color(0xFF334155))
+                    booking.proofOfPaymentUploaded -> Triple("Pending Verification", Color(0xFFFEF3C7), Color(0xFFD97706))
                     normStatus == "Confirmed" -> Triple(stringResource(R.string.confirmed), Color(0xFFECFDF5), Color(0xFF047857))
                     else -> Triple(stringResource(R.string.pending), Color(0xFFFEF3C7), Color(0xFFD97706))
                 }
@@ -1264,6 +1306,13 @@ fun UserBookingCard(
                     if (normStatus == "Completed") stringResource(R.string.trip_completed) else stringResource(R.string.confirmed_and_paid),
                     Color(0xFF047857)
                 )
+                booking.proofOfPaymentUploaded -> Tuple5(
+                    StepStatus.COMPLETED,
+                    StepStatus.COMPLETED,
+                    StepStatus.PENDING,
+                    stringResource(R.string.pending_admin_verification),
+                    Color(0xFFD97706)
+                )
                 normStatus == "Confirmed" -> Tuple5(
                     StepStatus.COMPLETED,
                     StepStatus.COMPLETED,
@@ -1325,7 +1374,8 @@ fun UserBookingCard(
             if (normStatus == "Confirmed" && normPayment != "Paid" && booking.confirmationTimestamp > 0L) {
                 PaymentCountdownTimer(
                     confirmationTimestamp = booking.confirmationTimestamp,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    proofUploaded = booking.proofOfPaymentUploaded
                 )
             }
 
@@ -1341,10 +1391,13 @@ fun UserBookingCard(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Main Action Button (View receipt / Pay now / View invoice)
+                    // Main Action Button (View receipt / Waiting admin verification / Pay now / View invoice)
                     OutlinedButton(
                         onClick = {
                             if (normPayment == "Paid") onViewReceipt(booking.bookingId)
+                            else if (booking.proofOfPaymentUploaded) {
+                                Toast.makeText(context, "Payment is awaiting admin verification", Toast.LENGTH_SHORT).show()
+                            }
                             else if (normStatus == "Confirmed") onPayNow()
                             else onViewInvoice(booking.bookingId)
                         },
@@ -1353,21 +1406,32 @@ fun UserBookingCard(
                         border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
                         contentPadding = PaddingValues(vertical = 12.dp)
                     ) {
-                        val buttonIcon = if (normPayment == "Paid") Icons.Default.Description else if (normStatus == "Confirmed") Icons.Default.CreditCard else Icons.Default.Description
-                        val buttonLabel = if (normPayment == "Paid") stringResource(R.string.view_receipt) else if (normStatus == "Confirmed") stringResource(R.string.pay_now) else stringResource(R.string.view_invoice)
+                        val buttonIcon = when {
+                            normPayment == "Paid" -> Icons.Default.Description
+                            booking.proofOfPaymentUploaded -> Icons.Default.AccessTime
+                            normStatus == "Confirmed" -> Icons.Default.CreditCard
+                            else -> Icons.Default.Description
+                        }
+                        val buttonLabel = when {
+                            normPayment == "Paid" -> stringResource(R.string.view_receipt)
+                            booking.proofOfPaymentUploaded -> "Waiting admin verification"
+                            normStatus == "Confirmed" -> stringResource(R.string.pay_now)
+                            else -> stringResource(R.string.view_invoice)
+                        }
+                        val buttonColor = if (booking.proofOfPaymentUploaded) Color(0xFFD97706) else Color(0xFF2563EB)
 
                         Icon(
                             imageVector = buttonIcon,
                             contentDescription = null,
-                            tint = Color(0xFF2563EB),
+                            tint = buttonColor,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = buttonLabel,
-                            fontSize = 15.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2563EB)
+                            color = buttonColor
                         )
                     }
 
@@ -1940,20 +2004,29 @@ fun InvoiceScreen(
                         }
 
                         if (isConfirmed && !isPaid && booking!!.confirmationTimestamp > 0L) {
-                            val deadline = booking!!.confirmationTimestamp + 2L * 24 * 60 * 60 * 1000L
-                            val timeLeftMs = deadline - System.currentTimeMillis()
-                            val hoursLeft = maxOf(0L, timeLeftMs / (1000L * 60 * 60))
-                            val daysLeft = hoursLeft / 24
-                            val remHours = hoursLeft % 24
-                            val timeLeftStr = if (daysLeft > 0) "$daysLeft days $remHours hours left" else "$hoursLeft hours left"
-
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Payment deadline: Complete within 2 days after admin confirmation ($timeLeftStr remaining)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFFD97706),
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            if (booking!!.proofOfPaymentUploaded) {
+                                Text(
+                                    text = "Proof of payment uploaded. Payment timer paused (Pending admin verification).",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF059669),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            } else {
+                                val deadline = booking!!.confirmationTimestamp + 2L * 24 * 60 * 60 * 1000L
+                                val timeLeftMs = deadline - System.currentTimeMillis()
+                                val hoursLeft = maxOf(0L, timeLeftMs / (1000L * 60 * 60))
+                                val daysLeft = hoursLeft / 24
+                                val remHours = hoursLeft % 24
+                                val timeLeftStr = if (daysLeft > 0) "$daysLeft days $remHours hours left" else "$hoursLeft hours left"
+
+                                Text(
+                                    text = "Payment deadline: Complete within 2 days after admin confirmation ($timeLeftStr remaining)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFFD97706),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 }
